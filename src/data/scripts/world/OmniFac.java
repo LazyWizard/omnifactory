@@ -17,6 +17,8 @@ public class OmniFac implements SpawnPointPlugin
 {
     private static final boolean SHOW_ADDED_CARGO = true;
     private static final boolean SHOW_LIMIT_REACHED = true;
+    private static final boolean REMOVE_BROKEN_GOODS = false;
+    private static final Map allFactories = new HashMap();
     private SectorEntityToken station;
     private long lastHeartbeat;
     private int numHeartbeats = 0;
@@ -27,6 +29,33 @@ public class OmniFac implements SpawnPointPlugin
     {
         this.station = station;
         lastHeartbeat = Global.getSector().getClock().getTimestamp();
+        allFactories.put(station, this);
+    }
+
+    public Object readResolve()
+    {
+        allFactories.put(this.station, this);
+        return this;
+    }
+
+    public static boolean isFactory(SectorEntityToken station)
+    {
+        return allFactories.keySet().contains(station);
+    }
+
+    public static OmniFac getFactory(SectorEntityToken station)
+    {
+        if (!isFactory(station))
+        {
+            return null;
+        }
+
+        return (OmniFac) allFactories.get(station);
+    }
+
+    public static List getFactories()
+    {
+        return new ArrayList(allFactories.keySet());
     }
 
     private void heartbeat()
@@ -40,7 +69,22 @@ public class OmniFac implements SpawnPointPlugin
 
             if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
             {
-                tmp.create();
+                try
+                {
+                    tmp.create();
+                }
+                catch (RuntimeException ex)
+                {
+                    Global.getSector().addMessage("Failed to create ship '"
+                            + tmp.getName() + "'! Was a required mod disabled?");
+
+                    if (REMOVE_BROKEN_GOODS)
+                    {
+                        Global.getSector().addMessage("Removing ship '" + tmp.getName()
+                                + "' from " + station.getFullName() + "'s memory banks...");
+                        ships.remove();
+                    }
+                }
             }
         }
 
@@ -50,12 +94,27 @@ public class OmniFac implements SpawnPointPlugin
 
             if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
             {
-                tmp.create();
+                try
+                {
+                    tmp.create();
+                }
+                catch (RuntimeException ex)
+                {
+                    Global.getSector().addMessage("Failed to create weapon '"
+                            + tmp.getName() + "'! Was a required mod disabled?");
+
+                    if (REMOVE_BROKEN_GOODS)
+                    {
+                        Global.getSector().addMessage("Removing weapon '" + tmp.getName()
+                                + "' from " + station.getFullName() + "'s memory banks.,,");
+                        weps.remove();
+                    }
+                }
             }
         }
     }
 
-    private void checkCargo()
+    public void checkCargo()
     {
         CargoAPI cargo = station.getCargo();
         CargoStackAPI stack;
@@ -66,8 +125,13 @@ public class OmniFac implements SpawnPointPlugin
         {
             stack = (CargoStackAPI) stacks.next();
 
-            if (analyseStack(stack))
+            if (isUnknownWeapon(stack))
             {
+                WeaponData tmp = new WeaponData(stack, this);
+                wepData.put((String) stack.getData(), tmp);
+                Global.getSector().addMessage("A new " + tmp.getName()
+                        + " will be produced at the " + station.getFullName()
+                        + " every " + tmp.getDaysToCreate() + " days.");
                 cargo.removeWeapons((String) stack.getData(), 1);
             }
         }
@@ -77,14 +141,20 @@ public class OmniFac implements SpawnPointPlugin
         {
             ship = (FleetMemberAPI) ships.next();
 
-            if (analyseShip(ship))
+            if (isUnknownShip(ship))
             {
+                String id = parseHullName(ship);
+                ShipData tmp = new ShipData(ship, this);
+                shipData.put(id, tmp);
+                Global.getSector().addMessage("A new " + tmp.getName()
+                        + " will be produced at the " + station.getFullName()
+                        + " every " + tmp.getDaysToCreate() + " days.");
                 cargo.getMothballedShips().removeFleetMember(ship);
             }
         }
     }
 
-    private boolean analyseStack(CargoStackAPI stack)
+    public boolean isUnknownWeapon(CargoStackAPI stack)
     {
         if (!stack.isWeaponStack())
         {
@@ -98,29 +168,17 @@ public class OmniFac implements SpawnPointPlugin
             return false;
         }
 
-        WeaponData tmp = new WeaponData(stack, this);
-        wepData.put((String) stack.getData(), tmp);
-        Global.getSector().addMessage("A new " + tmp.getName()
-                + " will be produced at the " + station.getFullName()
-                + " every " + tmp.getDaysToCreate() + " days.");
         return true;
     }
 
-    private boolean analyseShip(FleetMemberAPI ship)
+    public boolean isUnknownShip(FleetMemberAPI ship)
     {
-        String id = parseHullName(ship);
-
-        if (shipData.containsKey(id))
+        if (shipData.containsKey(parseHullName(ship)))
         {
             // Already queued for construction
             return false;
         }
 
-        ShipData tmp = new ShipData(ship, this);
-        shipData.put(id, tmp);
-        Global.getSector().addMessage("A new " + tmp.getName()
-                + " will be produced at the " + station.getFullName()
-                + " every " + tmp.getDaysToCreate() + " days.");
         return true;
     }
 
@@ -151,6 +209,8 @@ public class OmniFac implements SpawnPointPlugin
             lastHeartbeat = clock.getTimestamp();
             heartbeat();
             checkCargo();
+
+
         }
     }
 

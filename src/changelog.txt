@@ -1,0 +1,11 @@
+ Version 1.1 (January 1, 2013)
+===============================
+Fixed nasty crash bug with non-standard variant names
+Added station tracking and lookup
+ - List OmniFac.getFactories()
+ - OmniFac OmniFac.getFactory(SectorEntityToken station)
+ - boolean isFactory(SectorEntityToken station)
+
+ Version 1.0 (December 27, 2012)
+=================================
+Initial release

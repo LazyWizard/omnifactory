@@ -1,9 +1,0 @@
-{
-  "id":"lw_omnifac",
-  "name":"Omnifactory Mod",
-  "author":"LazyWizard",
-  "utility":"false",
-  "version":"1.1",
-  "description":"Adds a factory orbiting Corvus IV. Any weapon or ship sold here will be disassembled and added to the factory's replicators, and more will be produced over time.\n\nProduction time is based on the size and complexity of the blueprint. The factory will produce up to one full stack of each weapon in its memory banks, and 6/5/4/3/2 of each fighter/frigate/destroyer/cruiser/capital ship.",
-  "gameVersion":"0.54",
-}

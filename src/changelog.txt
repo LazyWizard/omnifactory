@@ -1,10 +1,49 @@
+ Version 1.2 (January 1, 2013)
+===============================
+(this version is not save compatible with earlier versions)
+Moved mod code into a jar (better type-safety, faster loading)
+The omnifactory can now optionally require fuel, supplies and crew to function.
+Added warnings when factory requirements are not met.
+New methods for controlling factory settings (these are all per station):
+ - setShowAddedCargo(boolean showAddedCargo)
+   Sets if 'X added to station' messages appear. Defaults to true.
+ - setShowLimitReached(boolean showLimitReached)
+   Sets if 'Limit for X reached' messages appear. Defaults to true.
+ - setRemoveBrokenGoods(boolean removeBrokenGoods)
+   Sets if buggy goods should be removed from memory. Defaults to false.
+ - setShipProductionTimeModifier(float modifier)
+   Sets ship production time modifier. Defaults to 1.0.
+ - setWeaponProductionTimeModifier(float modifier)
+   Sets weapon production time modifier. Defaults to 1.0.
+ - setRequiredCrew(int requiredCrew)
+   Sets the minimum amount of crew for the factory to function. Defaults to 0.
+ - setRequiredSuppliesPerDay(float suppliesPerDay)
+   Sets factory supply consumption per day. Defaults to 0.
+ - setRequiredFuelPerDay(float fuelPerDay)
+   Sets factory fuel consumption per day. Defaults to 0.
+ - setMaxHullsPerFighter(int maxHulls)
+   Sets how many of each fighter to produce. Retroactive. Defaults to 6.
+ - setMaxHullsPerFrigate(int maxHulls)
+   Sets how many of each frigate to produce. Retroactive. Defaults to 5.
+ - setMaxHullsPerDestroyer(int maxHulls)
+   Sets how many of each destroyer to produce. Retroactive. Defaults to 4.
+ - setMaxHullsPerCruiser(int maxHulls)
+   Sets how many of each cruiser to produce. Retroactive. Defaults to 3.
+ - setMaxHullsPerCapital(int maxHulls)
+   Sets how many of each capital ship to produce. Retroactive. Defaults to 2.
+Other new methods:
+ - boolean isUnknownShip(FleetMemberAPI ship)
+   Returns true if this station has never encountered this ship's base hull.
+ - boolean isUnknownWeapon(CargoStackAPI stack)
+   Returns true if this station has never encountered this weapon.
+
  Version 1.1 (January 1, 2013)
 ===============================
-Fixed nasty crash bug with non-standard variant names
-Added station tracking and lookup
+Fixed nasty crash bug with non-standard variant IDs
+Added station tracking and lookup:
  - List OmniFac.getFactories()
  - OmniFac OmniFac.getFactory(SectorEntityToken station)
- - boolean isFactory(SectorEntityToken station)
+ - boolean OmniFac.isFactory(SectorEntityToken station)
 
  Version 1.0 (December 27, 2012)
 =================================

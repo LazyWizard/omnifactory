@@ -197,7 +197,6 @@ public class OmniFac implements SpawnPointPlugin
         {
             if (!warnedRequirements)
             {
-                warnedRequirements = true;
                 Global.getSector().addMessage("The " + station.getFullName()
                         + " needs " + (REQUIRED_CREW - cargo.getTotalCrew())
                         + " more crew to function.");
@@ -210,7 +209,6 @@ public class OmniFac implements SpawnPointPlugin
         {
             if (!warnedRequirements)
             {
-                warnedRequirements = true;
                 Global.getSector().addMessage("The " + station.getFullName()
                         + " is out of fuel. It requires " + REQUIRED_FUEL_PER_DAY
                         + " per day to function.");
@@ -223,7 +221,6 @@ public class OmniFac implements SpawnPointPlugin
         {
             if (!warnedRequirements)
             {
-                warnedRequirements = true;
                 Global.getSector().addMessage("The " + station.getFullName()
                         + " is out of supplies. It requires " + REQUIRED_SUPPLIES_PER_DAY
                         + " per day to function.");
@@ -234,6 +231,7 @@ public class OmniFac implements SpawnPointPlugin
 
         if (!metRequirements)
         {
+            warnedRequirements = true;
             return;
         }
 

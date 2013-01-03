@@ -11,6 +11,7 @@ import com.fs.starfarer.api.campaign.SpawnPointPlugin;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import java.util.*;
+import org.lazywizard.lazylib.BaseUtils;
 import org.lazywizard.lazylib.campaign.CampaignUtils;
 
 @SuppressWarnings("unchecked")
@@ -247,8 +248,9 @@ public class OmniFac implements SpawnPointPlugin
         cargo.removeFuel(REQUIRED_FUEL_PER_DAY);
         numHeartbeats++;
 
-        StringBuilder reachedLimit = new StringBuilder();
-        StringBuilder created = new StringBuilder();
+        SortedSet<String> addedShips = new TreeSet();
+        SortedSet<String> addedWeps = new TreeSet();
+        SortedSet<String> hitLimit = new TreeSet();
 
         for (BaseData tmp : shipData.values())
         {
@@ -258,23 +260,12 @@ public class OmniFac implements SpawnPointPlugin
                 {
                     if (tmp.create())
                     {
-                        if (created.length() > 0)
-                        {
-                            created.append(", ");
-                        }
-
-                        created.append(tmp.getName()).append(" (").
-                                append(tmp.getTotal()).append("/").
-                                append(tmp.getLimit()).append(")");
+                        addedShips.add(tmp.getName() + " (" + tmp.getTotal()
+                                + "/" + tmp.getLimit() + ")");
                     }
                     else
                     {
-                        if (reachedLimit.length() > 0)
-                        {
-                            reachedLimit.append(", ");
-                        }
-
-                        reachedLimit.append(tmp.getName());
+                        hitLimit.add(tmp.getName());
                     }
                 }
                 catch (RuntimeException ex)
@@ -300,23 +291,12 @@ public class OmniFac implements SpawnPointPlugin
                 {
                     if (tmp.create())
                     {
-                        if (created.length() > 0)
-                        {
-                            created.append(", ");
-                        }
-
-                        created.append(tmp.getName()).append(" (").
-                                append(tmp.getTotal()).append("/").
-                                append(tmp.getLimit()).append(")");
+                        addedWeps.add(tmp.getName() + " (" + tmp.getTotal()
+                                + "/" + tmp.getLimit() + ")");
                     }
                     else
                     {
-                        if (reachedLimit.length() > 0)
-                        {
-                            reachedLimit.append(", ");
-                        }
-
-                        reachedLimit.append(tmp.getName());
+                        hitLimit.add(tmp.getName());
                     }
                 }
                 catch (RuntimeException ex)
@@ -334,17 +314,27 @@ public class OmniFac implements SpawnPointPlugin
             }
         }
 
-        if (SHOW_ADDED_CARGO && created.length() > 0)
+        if (SHOW_ADDED_CARGO)
         {
-            CampaignUtils.showMessage("The " + station.getFullName()
-                    + " has produced the following goods:",
-                    created.toString() + ".", true);
+            if (!addedShips.isEmpty())
+            {
+                CampaignUtils.showMessage("The " + station.getFullName()
+                        + " has produced the following ships:",
+                        BaseUtils.implode(addedShips) + ".", true);
+            }
+            if (!addedWeps.isEmpty())
+            {
+                CampaignUtils.showMessage("The " + station.getFullName()
+                        + " has produced the following weapons:",
+                        BaseUtils.implode(addedWeps) + ".", true);
+            }
         }
-        if (SHOW_LIMIT_REACHED && reachedLimit.length() > 0)
+
+        if (SHOW_LIMIT_REACHED && !hitLimit.isEmpty())
         {
             CampaignUtils.showMessage("The " + station.getFullName()
                     + " has reached its limit for the following goods:",
-                    reachedLimit.toString() + ".", true);
+                    BaseUtils.implode(hitLimit) + ".", true);
         }
     }
 
@@ -453,7 +443,7 @@ public class OmniFac implements SpawnPointPlugin
             {
                 size = 4;
             }
-            else if (ship.isCapital())
+            else
             {
                 size = 5;
             }

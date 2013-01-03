@@ -2,7 +2,8 @@
 ===============================
 (this version is not save compatible with earlier versions)
 This mod now requires LazyLib (included in the download)
-Omnifactory notifications are much less spammy now.
+Omnifactory notifications are more organized and much less spammy now.
+Fixed rare divide by zero bug with certain modded fighters.
 New setting:
  - setMaxStacksPerWeapon(float maxStacks)
    Sets how many stacks of each weapon to produce. Defaults to 1.0.

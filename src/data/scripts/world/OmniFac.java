@@ -342,20 +342,8 @@ public class OmniFac implements SpawnPointPlugin
     {
         boolean newItem = false;
         CargoAPI cargo = station.getCargo();
-
-        for (CargoStackAPI stack : cargo.getStacksCopy())
-        {
-            if (isUnknownWeapon(stack))
-            {
-                newItem = true;
-                WeaponData tmp = new WeaponData(stack, this);
-                wepData.put((String) stack.getData(), tmp);
-                Global.getSector().addMessage("A new " + tmp.getName()
-                        + " will be produced at the " + station.getFullName()
-                        + " every " + tmp.getDaysToCreate() + " days.");
-                cargo.removeWeapons((String) stack.getData(), 1);
-            }
-        }
+        SortedSet<String> newWeapons = new TreeSet();
+        SortedSet<String> newShips = new TreeSet();
 
         for (FleetMemberAPI ship : cargo.getMothballedShips().getMembersListCopy())
         {
@@ -365,11 +353,37 @@ public class OmniFac implements SpawnPointPlugin
                 String id = parseHullName(ship);
                 ShipData tmp = new ShipData(ship, this);
                 shipData.put(id, tmp);
-                Global.getSector().addMessage("A new " + tmp.getName()
-                        + " will be produced at the " + station.getFullName()
-                        + " every " + tmp.getDaysToCreate() + " days.");
+                newShips.add(tmp.getName() + " ("
+                        + tmp.getDaysToCreate() + "d)");
                 cargo.getMothballedShips().removeFleetMember(ship);
             }
+        }
+
+        for (CargoStackAPI stack : cargo.getStacksCopy())
+        {
+            if (isUnknownWeapon(stack))
+            {
+                newItem = true;
+                WeaponData tmp = new WeaponData(stack, this);
+                wepData.put((String) stack.getData(), tmp);
+                newWeapons.add(tmp.getName() + " ("
+                        + tmp.getDaysToCreate() + "d)");
+                cargo.removeWeapons((String) stack.getData(), 1);
+            }
+        }
+
+        if (!newShips.isEmpty())
+        {
+            CampaignUtils.showMessage("New ship blueprints added to the "
+                    + station.getFullName() + ":",
+                    BaseUtils.implode(newShips) + ".", true);
+        }
+
+        if (!newWeapons.isEmpty())
+        {
+            CampaignUtils.showMessage("New weapon blueprints added to the "
+                    + station.getFullName() + ":",
+                    BaseUtils.implode(newWeapons) + ".", true);
         }
 
         return newItem;

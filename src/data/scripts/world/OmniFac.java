@@ -11,6 +11,7 @@ import com.fs.starfarer.api.campaign.SpawnPointPlugin;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import java.util.*;
+import org.lazywizard.lazylib.campaign.CampaignUtils;
 
 @SuppressWarnings("unchecked")
 public class OmniFac implements SpawnPointPlugin
@@ -240,13 +241,35 @@ public class OmniFac implements SpawnPointPlugin
         cargo.removeFuel(REQUIRED_FUEL_PER_DAY);
         numHeartbeats++;
 
+        StringBuilder reachedLimit = new StringBuilder();
+        StringBuilder created = new StringBuilder();
+
         for (BaseData tmp : shipData.values())
         {
             if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
             {
                 try
                 {
-                    tmp.create();
+                    if (tmp.create())
+                    {
+                        if (created.length() > 0)
+                        {
+                            created.append(", ");
+                        }
+
+                        created.append(tmp.getName()).append(" (").
+                                append(tmp.getTotal()).append("/").
+                                append(tmp.getLimit()).append(")");
+                    }
+                    else
+                    {
+                        if (reachedLimit.length() > 0)
+                        {
+                            reachedLimit.append(", ");
+                        }
+
+                        reachedLimit.append(tmp.getName());
+                    }
                 }
                 catch (RuntimeException ex)
                 {
@@ -269,7 +292,26 @@ public class OmniFac implements SpawnPointPlugin
             {
                 try
                 {
-                    tmp.create();
+                    if (tmp.create())
+                    {
+                        if (created.length() > 0)
+                        {
+                            created.append(", ");
+                        }
+
+                        created.append(tmp.getName()).append(" (").
+                                append(tmp.getTotal()).append("/").
+                                append(tmp.getLimit()).append(")");
+                    }
+                    else
+                    {
+                        if (reachedLimit.length() > 0)
+                        {
+                            reachedLimit.append(", ");
+                        }
+
+                        reachedLimit.append(tmp.getName());
+                    }
                 }
                 catch (RuntimeException ex)
                 {
@@ -284,6 +326,19 @@ public class OmniFac implements SpawnPointPlugin
                     }
                 }
             }
+        }
+
+        if (SHOW_ADDED_CARGO && created.length() > 0)
+        {
+            CampaignUtils.showMessage("The " + station.getFullName()
+                    + " has produced the following goods:",
+                    created.toString() + ".", true);
+        }
+        if (SHOW_LIMIT_REACHED && reachedLimit.length() > 0)
+        {
+            CampaignUtils.showMessage("The " + station.getFullName()
+                    + " has reached its limit for the following goods:",
+                    reachedLimit.toString() + ".", true);
         }
     }
 
@@ -353,6 +408,8 @@ public class OmniFac implements SpawnPointPlugin
 
         public String getId();
 
+        public int getTotal();
+
         public int getLimit();
 
         public boolean create();
@@ -364,7 +421,6 @@ public class OmniFac implements SpawnPointPlugin
         String id, displayName;
         FleetMemberType type;
         int fp, size, daysOffset;
-        boolean warnedLimit = false;
 
         public ShipData(FleetMemberAPI ship, OmniFac factory)
         {
@@ -425,6 +481,22 @@ public class OmniFac implements SpawnPointPlugin
         }
 
         @Override
+        public int getTotal()
+        {
+            int total = 0;
+
+            for (FleetMemberAPI tmp : fac.station.getCargo().getMothballedShips().getMembersListCopy())
+            {
+                if (id.equals(parseHullName(tmp)))
+                {
+                    total++;
+                }
+            }
+
+            return total;
+        }
+
+        @Override
         public int getLimit()
         {
             switch (size)
@@ -447,41 +519,14 @@ public class OmniFac implements SpawnPointPlugin
         @Override
         public boolean create()
         {
-            int total = 0, limit = getLimit();
-
-            for (FleetMemberAPI tmp : fac.station.getCargo().getMothballedShips().getMembersListCopy())
+            if (getTotal() >= getLimit())
             {
-                if (id.equals(parseHullName(tmp)))
-                {
-                    total++;
-                }
-            }
-
-            if (total >= limit)
-            {
-                if (fac.SHOW_LIMIT_REACHED && !warnedLimit)
-                {
-                    warnedLimit = true;
-                    Global.getSector().addMessage("Limit reached for " + displayName
-                            + " at " + fac.station.getFullName() + ".");
-                }
-
                 daysOffset = fac.numHeartbeats % getDaysToCreate();
                 return false;
             }
 
-            total++;
-            warnedLimit = false;
             fac.station.getCargo().addMothballedShip(type, id
                     + (type.equals(FleetMemberType.FIGHTER_WING) ? "" : "_Hull"), null);
-
-            if (fac.SHOW_ADDED_CARGO)
-            {
-                Global.getSector().addMessage("Added " + displayName + " to "
-                        + fac.station.getFullName() + " (total: " + total
-                        + "/" + limit + ").");
-            }
-
             return true;
         }
     }
@@ -492,7 +537,6 @@ public class OmniFac implements SpawnPointPlugin
         String id, displayName;
         float size;
         int daysOffset, limit;
-        boolean warnedLimit = false;
 
         public WeaponData(CargoStackAPI stack, OmniFac factory)
         {
@@ -529,6 +573,12 @@ public class OmniFac implements SpawnPointPlugin
         }
 
         @Override
+        public int getTotal()
+        {
+            return fac.station.getCargo().getNumWeapons(id);
+        }
+
+        @Override
         public int getLimit()
         {
             return limit;
@@ -537,32 +587,13 @@ public class OmniFac implements SpawnPointPlugin
         @Override
         public boolean create()
         {
-            int total = fac.station.getCargo().getNumWeapons(id);
-
-            if (total >= limit)
+            if (getTotal() >= getLimit())
             {
-                if (fac.SHOW_LIMIT_REACHED && !warnedLimit)
-                {
-                    warnedLimit = true;
-                    Global.getSector().addMessage("Limit reached for " + displayName
-                            + " at " + fac.station.getFullName() + ".");
-                }
-
                 daysOffset = fac.numHeartbeats % getDaysToCreate();
                 return false;
             }
 
-            total++;
-            warnedLimit = false;
             fac.station.getCargo().addWeapons(id, 1);
-
-            if (fac.SHOW_ADDED_CARGO)
-            {
-                Global.getSector().addMessage("Added " + displayName + " to "
-                        + fac.station.getFullName() + " (total: " + total
-                        + "/" + limit + ").");
-            }
-
             return true;
         }
     }

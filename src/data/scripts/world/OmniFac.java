@@ -30,6 +30,7 @@ public class OmniFac implements SpawnPointPlugin
     private int MAX_HULLS_PER_DESTROYER = 4;
     private int MAX_HULLS_PER_CRUISER = 3;
     private int MAX_HULLS_PER_CAPITAL = 2;
+    private float MAX_STACKS_PER_WEAPON = 1.0f;
     private Map<String, ShipData> shipData = new HashMap();
     private Map<String, WeaponData> wepData = new HashMap();
     private SectorEntityToken station;
@@ -155,6 +156,11 @@ public class OmniFac implements SpawnPointPlugin
     public void setMaxHullsPerCapital(int maxHulls)
     {
         MAX_HULLS_PER_CAPITAL = maxHulls;
+    }
+
+    public void setMaxStacksPerWeapon(float maxStacks)
+    {
+        MAX_STACKS_PER_WEAPON = maxStacks;
     }
     //</editor-fold>
 
@@ -536,7 +542,7 @@ public class OmniFac implements SpawnPointPlugin
         OmniFac fac;
         String id, displayName;
         float size;
-        int daysOffset, limit;
+        int daysOffset, stackSize;
 
         public WeaponData(CargoStackAPI stack, OmniFac factory)
         {
@@ -544,7 +550,7 @@ public class OmniFac implements SpawnPointPlugin
             id = (String) stack.getData();
             displayName = stack.getDisplayName();
             size = stack.getCargoSpacePerUnit();
-            limit = (int) stack.getMaxSize();
+            stackSize = (int) stack.getMaxSize();
             daysOffset = fac.numHeartbeats % getDaysToCreate();
         }
 
@@ -581,7 +587,7 @@ public class OmniFac implements SpawnPointPlugin
         @Override
         public int getLimit()
         {
-            return limit;
+            return (int) (stackSize * fac.MAX_STACKS_PER_WEAPON);
         }
 
         @Override

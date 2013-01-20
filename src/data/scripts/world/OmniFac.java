@@ -11,8 +11,8 @@ import com.fs.starfarer.api.campaign.SpawnPointPlugin;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import java.util.*;
-import org.lazywizard.lazylib.BaseUtils;
-import org.lazywizard.lazylib.campaign.CampaignUtils;
+import org.lazywizard.lazylib.CollectionUtils;
+import org.lazywizard.lazylib.campaign.MessageUtils;
 
 @SuppressWarnings("unchecked")
 public class OmniFac implements SpawnPointPlugin
@@ -318,23 +318,23 @@ public class OmniFac implements SpawnPointPlugin
         {
             if (!addedShips.isEmpty())
             {
-                CampaignUtils.showMessage("The " + station.getFullName()
+                MessageUtils.showMessage("The " + station.getFullName()
                         + " has produced the following ships:",
-                        BaseUtils.implode(addedShips) + ".", true);
+                        CollectionUtils.implode(addedShips) + ".", true);
             }
             if (!addedWeps.isEmpty())
             {
-                CampaignUtils.showMessage("The " + station.getFullName()
+                MessageUtils.showMessage("The " + station.getFullName()
                         + " has produced the following weapons:",
-                        BaseUtils.implode(addedWeps) + ".", true);
+                        CollectionUtils.implode(addedWeps) + ".", true);
             }
         }
 
         if (SHOW_LIMIT_REACHED && !hitLimit.isEmpty())
         {
-            CampaignUtils.showMessage("The " + station.getFullName()
+            MessageUtils.showMessage("The " + station.getFullName()
                     + " has reached its limit for the following goods:",
-                    BaseUtils.implode(hitLimit) + ".", true);
+                    CollectionUtils.implode(hitLimit) + ".", true);
         }
     }
 
@@ -374,16 +374,16 @@ public class OmniFac implements SpawnPointPlugin
 
         if (!newShips.isEmpty())
         {
-            CampaignUtils.showMessage("New ship blueprints added to the "
+            MessageUtils.showMessage("New ship blueprints added to the "
                     + station.getFullName() + ":",
-                    BaseUtils.implode(newShips) + ".", true);
+                    CollectionUtils.implode(newShips) + ".", true);
         }
 
         if (!newWeapons.isEmpty())
         {
-            CampaignUtils.showMessage("New weapon blueprints added to the "
+            MessageUtils.showMessage("New weapon blueprints added to the "
                     + station.getFullName() + ":",
-                    BaseUtils.implode(newWeapons) + ".", true);
+                    CollectionUtils.implode(newWeapons) + ".", true);
         }
 
         return newItem;

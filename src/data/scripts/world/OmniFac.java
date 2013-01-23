@@ -21,17 +21,21 @@ public class OmniFac implements SpawnPointPlugin
     private boolean SHOW_ADDED_CARGO = true;
     private boolean SHOW_LIMIT_REACHED = true;
     private boolean REMOVE_BROKEN_GOODS = false;
+    private float SHIP_ANALYSIS_TIME_MOD = 1.0f;
+    private float WEAPON_ANALYSIS_TIME_MOD = 1.0f;
     private float SHIP_PRODUCTION_TIME_MOD = 1.0f;
     private float WEAPON_PRODUCTION_TIME_MOD = 1.0f;
     private int REQUIRED_CREW = 0;
     private float REQUIRED_SUPPLIES_PER_DAY = 0f;
     private float REQUIRED_FUEL_PER_DAY = 0f;
-    private int MAX_HULLS_PER_FIGHTER = 6;
-    private int MAX_HULLS_PER_FRIGATE = 5;
-    private int MAX_HULLS_PER_DESTROYER = 4;
-    private int MAX_HULLS_PER_CRUISER = 3;
-    private int MAX_HULLS_PER_CAPITAL = 2;
-    private float MAX_STACKS_PER_WEAPON = 1.0f;
+    private int MAX_HULLS_PER_FIGHTER = 3;
+    private int MAX_HULLS_PER_FRIGATE = 3;
+    private int MAX_HULLS_PER_DESTROYER = 2;
+    private int MAX_HULLS_PER_CRUISER = 2;
+    private int MAX_HULLS_PER_CAPITAL = 1;
+    private float MAX_STACKS_PER_WEAPON = 0.5f;
+    private Map<String, Integer> shipAnalysisData = new HashMap();
+    private Map<String, Integer> wepAnalysisData = new HashMap();
     private Map<String, ShipData> shipData = new HashMap();
     private Map<String, WeaponData> wepData = new HashMap();
     private SectorEntityToken station;
@@ -82,14 +86,7 @@ public class OmniFac implements SpawnPointPlugin
             return ship.getSpecId();
         }
 
-        int lastIndex = ship.getSpecId().lastIndexOf("_");
-
-        if (lastIndex > 0)
-        {
-            return ship.getSpecId().substring(0, lastIndex);
-        }
-
-        return ship.getSpecId();
+        return ship.getHullId();
     }
     //</editor-fold>
 
@@ -107,6 +104,16 @@ public class OmniFac implements SpawnPointPlugin
     public void setRemoveBrokenGoods(boolean removeBrokenGoods)
     {
         REMOVE_BROKEN_GOODS = removeBrokenGoods;
+    }
+
+    public void setShipAnalysisTimeModifier(float modifier)
+    {
+        SHIP_ANALYSIS_TIME_MOD = modifier;
+    }
+
+    public void setWeaponAnalysisTimeModifier(float modifier)
+    {
+        WEAPON_ANALYSIS_TIME_MOD = modifier;
     }
 
     public void setShipProductionTimeModifier(float modifier)
@@ -410,6 +417,8 @@ public class OmniFac implements SpawnPointPlugin
     //<editor-fold defaultstate="collapsed" desc="Internal data types">
     private static interface BaseData
     {
+        public int getDaysToAnalyze();
+
         public int getDaysToCreate();
 
         public int getDaysOffset();
@@ -436,8 +445,9 @@ public class OmniFac implements SpawnPointPlugin
         {
             fac = factory;
             id = parseHullName(ship);
-            displayName = Character.toUpperCase(ship.getSpecId().charAt(0))
-                    + parseHullName(ship).substring(1).replace('_', ' ');
+            displayName = parseHullName(ship);
+            displayName = Character.toUpperCase(displayName.charAt(0))
+                    + displayName.substring(1).replace('_', ' ');
             type = ship.getType();
             fp = ship.getFleetPointCost();
 
@@ -463,6 +473,13 @@ public class OmniFac implements SpawnPointPlugin
             }
 
             daysOffset = fac.numHeartbeats % getDaysToCreate();
+        }
+
+        @Override
+        public int getDaysToAnalyze()
+        {
+            return (int) Math.max((fp * size) * fac.SHIP_ANALYSIS_TIME_MOD,
+                    size * 6f);
         }
 
         @Override
@@ -556,6 +573,12 @@ public class OmniFac implements SpawnPointPlugin
             size = stack.getCargoSpacePerUnit();
             stackSize = (int) stack.getMaxSize();
             daysOffset = fac.numHeartbeats % getDaysToCreate();
+        }
+
+        @Override
+        public int getDaysToAnalyze()
+        {
+            return (int) Math.max(size * fac.WEAPON_ANALYSIS_TIME_MOD, 1f);
         }
 
         @Override

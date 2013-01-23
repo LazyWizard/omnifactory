@@ -1,14 +1,7 @@
  Version 1.5 (January XX, 2013)
 ================================
-(this version is not save compatible with earlier versions)
-Unknown goods now must be analyzed before production can begin (adds time delay)
 Lowered the maximum number of hulls produced (was 6/5/4/3/2, now 3/3/2/2/1)
 Lowered the maximum stack size for weapons produced (was 40/20/10, now 20/10/5)
-New settings:
- - setShipAnalysisTimeModifier(float modifier)
-   Sets ship blueprint analysis time modifier. Defaults to 1.0.
- - setWeaponAnalysisTimeModifier(float modifier)
-   Sets weapon blueprint analysis time modifier. Defaults to 1.0.
 
  Version 1.4 (January 20, 2013)
 ================================

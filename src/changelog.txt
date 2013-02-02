@@ -1,7 +1,8 @@
- Version 1.5 (January XX, 2013)
+ Version 1.5 (February 2, 2013)
 ================================
+Fixed bug when parsing hull names of certain mods' ships
 Lowered the maximum number of hulls produced (was 6/5/4/3/2, now 3/3/2/2/1)
-Lowered the maximum stack size for weapons produced (was 40/20/10, now 20/10/5)
+Lowered the maximum stack size of weapons produced (was 40/20/10, now 20/10/5)
 
  Version 1.4 (January 20, 2013)
 ================================

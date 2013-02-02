@@ -432,6 +432,7 @@ public class OmniFac implements SpawnPointPlugin
             displayName = parseHullName(ship);
             displayName = Character.toUpperCase(displayName.charAt(0))
                     + displayName.substring(1).replace('_', ' ');
+
             type = ship.getType();
             fp = ship.getFleetPointCost();
 
@@ -442,18 +443,22 @@ public class OmniFac implements SpawnPointPlugin
             else if (ship.isFrigate())
             {
                 size = 2;
+                //displayName += " frigate";
             }
             else if (ship.isDestroyer())
             {
                 size = 3;
+                //displayName += " destroyer";
             }
             else if (ship.isCruiser())
             {
                 size = 4;
+                //displayName += " cruiser";
             }
             else
             {
                 size = 5;
+                //displayName += " capital";
             }
 
             daysOffset = fac.numHeartbeats % getDaysToCreate();

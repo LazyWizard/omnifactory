@@ -18,7 +18,7 @@ import org.lazywizard.lazylib.campaign.MessageUtils;
 public class OmniFac implements SpawnPointPlugin
 {
     private static final Map<SectorEntityToken, OmniFac> allFactories = new HashMap();
-    private boolean SHOW_ADDED_CARGO = true;
+    private boolean SHOW_ADDED_CARGO = false;
     private boolean SHOW_LIMIT_REACHED = true;
     private boolean REMOVE_BROKEN_GOODS = false;
     private float SHIP_PRODUCTION_TIME_MOD = 1.0f;
@@ -256,15 +256,17 @@ public class OmniFac implements SpawnPointPlugin
                         addedShips.add(tmp.getName() + " (" + tmp.getTotal()
                                 + "/" + tmp.getLimit() + ")");
                     }
-                    else
+                    else if (SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
                     {
                         hitLimit.add(tmp.getName());
+                        tmp.setWarnedLimit(true);
                     }
                 }
                 catch (RuntimeException ex)
                 {
                     Global.getSector().addMessage("Failed to create ship '"
-                            + tmp.getName() + "'! Was a required mod disabled?");
+                            + tmp.getName() + "' (" + tmp.getId()
+                            + ")! Was a required mod disabled?");
 
                     if (REMOVE_BROKEN_GOODS)
                     {
@@ -287,15 +289,17 @@ public class OmniFac implements SpawnPointPlugin
                         addedWeps.add(tmp.getName() + " (" + tmp.getTotal()
                                 + "/" + tmp.getLimit() + ")");
                     }
-                    else
+                    else if (SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
                     {
                         hitLimit.add(tmp.getName());
+                        tmp.setWarnedLimit(true);
                     }
                 }
                 catch (RuntimeException ex)
                 {
                     Global.getSector().addMessage("Failed to create weapon '"
-                            + tmp.getName() + "'! Was a required mod disabled?");
+                            + tmp.getName() + "' (" + tmp.getId()
+                            + ")! Was a required mod disabled?");
 
                     if (REMOVE_BROKEN_GOODS)
                     {
@@ -415,6 +419,10 @@ public class OmniFac implements SpawnPointPlugin
 
         public int getLimit();
 
+        public boolean hasWarnedLimit();
+
+        public void setWarnedLimit(boolean hasWarned);
+
         public boolean create();
     }
 
@@ -424,6 +432,7 @@ public class OmniFac implements SpawnPointPlugin
         String id, displayName;
         FleetMemberType type;
         int fp, size, daysOffset;
+        boolean warnedLimit = false;
 
         public ShipData(FleetMemberAPI ship, OmniFac factory)
         {
@@ -526,6 +535,18 @@ public class OmniFac implements SpawnPointPlugin
         }
 
         @Override
+        public boolean hasWarnedLimit()
+        {
+            return warnedLimit;
+        }
+
+        @Override
+        public void setWarnedLimit(boolean hasWarned)
+        {
+            warnedLimit = hasWarned;
+        }
+
+        @Override
         public boolean create()
         {
             if (getTotal() >= getLimit())
@@ -534,6 +555,7 @@ public class OmniFac implements SpawnPointPlugin
                 return false;
             }
 
+            warnedLimit = false;
             fac.station.getCargo().addMothballedShip(type, id
                     + (type.equals(FleetMemberType.FIGHTER_WING) ? "" : "_Hull"), null);
             return true;
@@ -546,6 +568,7 @@ public class OmniFac implements SpawnPointPlugin
         String id, displayName;
         float size;
         int daysOffset, stackSize;
+        boolean warnedLimit = false;
 
         public WeaponData(CargoStackAPI stack, OmniFac factory)
         {
@@ -594,6 +617,18 @@ public class OmniFac implements SpawnPointPlugin
         }
 
         @Override
+        public boolean hasWarnedLimit()
+        {
+            return warnedLimit;
+        }
+
+        @Override
+        public void setWarnedLimit(boolean hasWarned)
+        {
+            warnedLimit = hasWarned;
+        }
+
+        @Override
         public boolean create()
         {
             if (getTotal() >= getLimit())
@@ -602,6 +637,7 @@ public class OmniFac implements SpawnPointPlugin
                 return false;
             }
 
+            warnedLimit = false;
             fac.station.getCargo().addWeapons(id, 1);
             return true;
         }

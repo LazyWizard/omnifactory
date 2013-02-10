@@ -1,3 +1,10 @@
+ Version 1.6 (February 10, 2013)
+================================
+(this version is not save compatible with earlier versions)
+Updated bundled version of LazyLib
+'Added <x> goods' message no longer appear by default (re-enable in AddOmniFac)
+Fixed 'limit reached' message being shown multiple times for the same good
+
  Version 1.5 (February 2, 2013)
 ================================
 Fixed bug when parsing hull names of certain mods' ships

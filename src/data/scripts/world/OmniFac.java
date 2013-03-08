@@ -10,6 +10,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.SpawnPointPlugin;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
+import java.lang.ref.WeakReference;
 import java.util.*;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
@@ -36,8 +37,8 @@ public class OmniFac implements SpawnPointPlugin
     private float MAX_STACKS_PER_WEAPON = 0.5f;
     private Map<String, Integer> shipAnalysisData = new HashMap();
     private Map<String, Integer> wepAnalysisData = new HashMap();
-    private Set<String> restrictedShips = new HashSet();
-    private Set<String> restrictedWeapons = new HashSet();
+    private Map<String, Boolean> restrictedShips = new HashMap();
+    private Map<String, Boolean> restrictedWeps = new HashMap();
     private Map<String, ShipData> shipData = new HashMap();
     private Map<String, WeaponData> wepData = new HashMap();
     private SectorEntityToken station;
@@ -73,12 +74,12 @@ public class OmniFac implements SpawnPointPlugin
             return null;
         }
 
-        return (OmniFac) allFactories.get(station);
+        return allFactories.get(station);
     }
 
     public static List<SectorEntityToken> getFactories()
     {
-        return new ArrayList<SectorEntityToken>(allFactories.keySet());
+        return new ArrayList(allFactories.keySet());
     }
 
     public static String parseHullName(FleetMemberAPI ship)
@@ -89,6 +90,14 @@ public class OmniFac implements SpawnPointPlugin
         }
 
         return ship.getHullId();
+    }
+
+    public static String getDisplayName(FleetMemberAPI ship)
+    {
+        String displayName = parseHullName(ship);
+        displayName = Character.toUpperCase(displayName.charAt(0))
+                + displayName.substring(1).replace('_', ' ');
+        return displayName;
     }
     //</editor-fold>
 
@@ -180,12 +189,12 @@ public class OmniFac implements SpawnPointPlugin
             hullId = hullId.substring(0, hullId.lastIndexOf("_Hull"));
         }
 
-        return restrictedShips.add(hullId);
+        return restrictedShips.put(hullId, false);
     }
 
     public boolean addRestrictedWeapon(String weaponId)
     {
-        return restrictedWeapons.add(weaponId);
+        return restrictedWeps.put(weaponId, false);
     }
 
     public boolean removeRestrictedShip(String hullId)
@@ -200,14 +209,15 @@ public class OmniFac implements SpawnPointPlugin
 
     public boolean removeRestrictedWeapon(String weaponId)
     {
-        return restrictedWeapons.remove(weaponId);
+        return restrictedWeps.remove(weaponId);
     }
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="Stack/ship analysis">
     public boolean isUnknownShip(FleetMemberAPI ship)
     {
-        if (shipData.containsKey(parseHullName(ship)))
+        String id = parseHullName(ship);
+        if (shipData.containsKey(id) || shipAnalysisData.containsKey(id))
         {
             // Already queued for construction
             return false;
@@ -224,7 +234,8 @@ public class OmniFac implements SpawnPointPlugin
             return false;
         }
 
-        if (wepData.containsKey((String) stack.getData()))
+        String id = (String) stack.getData();
+        if (wepData.containsKey(id) || wepAnalysisData.containsKey(id))
         {
             // Already queued for construction
             return false;
@@ -235,12 +246,12 @@ public class OmniFac implements SpawnPointPlugin
 
     public boolean isRestrictedShip(FleetMemberAPI ship)
     {
-        return restrictedShips.contains(parseHullName(ship));
+        return restrictedShips.containsKey(parseHullName(ship));
     }
 
     public boolean isRestrictedWeapon(CargoStackAPI stack)
     {
-        return restrictedWeapons.contains((String) stack.getData());
+        return restrictedWeps.containsKey((String) stack.getData());
     }
     //</editor-fold>
 
@@ -395,12 +406,22 @@ public class OmniFac implements SpawnPointPlugin
     {
         boolean newItem = false;
         CargoAPI cargo = station.getCargo();
-        SortedSet<String> newWeapons = new TreeSet();
         SortedSet<String> newShips = new TreeSet();
+        SortedSet<String> blockedShips = new TreeSet();
+        SortedSet<String> newWeps = new TreeSet();
+        SortedSet<String> blockedWeps = new TreeSet();
 
         for (FleetMemberAPI ship : cargo.getMothballedShips().getMembersListCopy())
         {
-            if (isUnknownShip(ship))
+            if (isRestrictedShip(ship))
+            {
+                if (!restrictedShips.get(parseHullName(ship)))
+                {
+                    blockedShips.add(getDisplayName(ship));
+                    restrictedShips.put(parseHullName(ship), true);
+                }
+            }
+            else if (isUnknownShip(ship))
             {
                 newItem = true;
                 String id = parseHullName(ship);
@@ -414,12 +435,20 @@ public class OmniFac implements SpawnPointPlugin
 
         for (CargoStackAPI stack : cargo.getStacksCopy())
         {
-            if (isUnknownWeapon(stack))
+            if (isRestrictedWeapon(stack))
+            {
+                if (!restrictedWeps.get((String) stack.getData()))
+                {
+                    blockedWeps.add(stack.getDisplayName());
+                    restrictedWeps.put((String) stack.getData(), true);
+                }
+            }
+            else if (isUnknownWeapon(stack))
             {
                 newItem = true;
                 WeaponData tmp = new WeaponData(stack, this);
                 wepData.put((String) stack.getData(), tmp);
-                newWeapons.add(tmp.getName() + " ("
+                newWeps.add(tmp.getName() + " ("
                         + tmp.getDaysToCreate() + "d)");
                 cargo.removeWeapons((String) stack.getData(), 1);
             }
@@ -432,11 +461,25 @@ public class OmniFac implements SpawnPointPlugin
                     CollectionUtils.implode(newShips) + ".", true);
         }
 
-        if (!newWeapons.isEmpty())
+        if (!newWeps.isEmpty())
         {
             MessageUtils.showMessage("New weapon blueprints added to the "
                     + station.getFullName() + ":",
-                    CollectionUtils.implode(newWeapons) + ".", true);
+                    CollectionUtils.implode(newWeps) + ".", true);
+        }
+
+        if (!blockedShips.isEmpty())
+        {
+            MessageUtils.showMessage("The Omnifactory is unable to replicate"
+                    + " the following ships:",
+                    CollectionUtils.implode(blockedShips) + ".", true);
+        }
+
+        if (!blockedWeps.isEmpty())
+        {
+            MessageUtils.showMessage("The Omnifactory is unable to replicate"
+                    + " the following weapons:",
+                    CollectionUtils.implode(blockedWeps) + ".", true);
         }
 
         return newItem;
@@ -496,10 +539,7 @@ public class OmniFac implements SpawnPointPlugin
         {
             fac = factory;
             id = parseHullName(ship);
-            displayName = parseHullName(ship);
-            displayName = Character.toUpperCase(displayName.charAt(0))
-                    + displayName.substring(1).replace('_', ' ');
-
+            displayName = getDisplayName(ship);
             type = ship.getType();
             fp = ship.getFleetPointCost();
 

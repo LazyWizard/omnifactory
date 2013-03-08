@@ -21,6 +21,8 @@ public class OmniFac implements SpawnPointPlugin
     private boolean SHOW_ADDED_CARGO = false;
     private boolean SHOW_LIMIT_REACHED = true;
     private boolean REMOVE_BROKEN_GOODS = false;
+    private float SHIP_ANALYSIS_TIME_MOD = 1.0f;
+    private float WEAPON_ANALYSIS_TIME_MOD = 1.0f;
     private float SHIP_PRODUCTION_TIME_MOD = 1.0f;
     private float WEAPON_PRODUCTION_TIME_MOD = 1.0f;
     private int REQUIRED_CREW = 0;
@@ -32,6 +34,10 @@ public class OmniFac implements SpawnPointPlugin
     private int MAX_HULLS_PER_CRUISER = 2;
     private int MAX_HULLS_PER_CAPITAL = 1;
     private float MAX_STACKS_PER_WEAPON = 0.5f;
+    private Map<String, Integer> shipAnalysisData = new HashMap();
+    private Map<String, Integer> wepAnalysisData = new HashMap();
+    private Set<String> restrictedShips = new HashSet();
+    private Set<String> restrictedWeapons = new HashSet();
     private Map<String, ShipData> shipData = new HashMap();
     private Map<String, WeaponData> wepData = new HashMap();
     private SectorEntityToken station;
@@ -102,6 +108,16 @@ public class OmniFac implements SpawnPointPlugin
         REMOVE_BROKEN_GOODS = removeBrokenGoods;
     }
 
+    public void setShipAnalysisTimeModifier(float modifier)
+    {
+        SHIP_ANALYSIS_TIME_MOD = modifier;
+    }
+
+    public void setWeaponAnalysisTimeModifier(float modifier)
+    {
+        WEAPON_ANALYSIS_TIME_MOD = modifier;
+    }
+
     public void setShipProductionTimeModifier(float modifier)
     {
         SHIP_PRODUCTION_TIME_MOD = modifier;
@@ -156,9 +172,50 @@ public class OmniFac implements SpawnPointPlugin
     {
         MAX_STACKS_PER_WEAPON = maxStacks;
     }
+
+    public boolean addRestrictedShip(String hullId)
+    {
+        if (hullId.endsWith("_Hull"))
+        {
+            hullId = hullId.substring(0, hullId.lastIndexOf("_Hull"));
+        }
+
+        return restrictedShips.add(hullId);
+    }
+
+    public boolean addRestrictedWeapon(String weaponId)
+    {
+        return restrictedWeapons.add(weaponId);
+    }
+
+    public boolean removeRestrictedShip(String hullId)
+    {
+        if (hullId.endsWith("_Hull"))
+        {
+            hullId = hullId.substring(0, hullId.lastIndexOf("_Hull"));
+        }
+
+        return restrictedShips.remove(hullId);
+    }
+
+    public boolean removeRestrictedWeapon(String weaponId)
+    {
+        return restrictedWeapons.remove(weaponId);
+    }
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="Stack/ship analysis">
+    public boolean isUnknownShip(FleetMemberAPI ship)
+    {
+        if (shipData.containsKey(parseHullName(ship)))
+        {
+            // Already queued for construction
+            return false;
+        }
+
+        return true;
+    }
+
     public boolean isUnknownWeapon(CargoStackAPI stack)
     {
         if (!stack.isWeaponStack())
@@ -176,15 +233,14 @@ public class OmniFac implements SpawnPointPlugin
         return true;
     }
 
-    public boolean isUnknownShip(FleetMemberAPI ship)
+    public boolean isRestrictedShip(FleetMemberAPI ship)
     {
-        if (shipData.containsKey(parseHullName(ship)))
-        {
-            // Already queued for construction
-            return false;
-        }
+        return restrictedShips.contains(parseHullName(ship));
+    }
 
-        return true;
+    public boolean isRestrictedWeapon(CargoStackAPI stack)
+    {
+        return restrictedWeapons.contains((String) stack.getData());
     }
     //</editor-fold>
 
@@ -407,6 +463,8 @@ public class OmniFac implements SpawnPointPlugin
     //<editor-fold defaultstate="collapsed" desc="Internal data types">
     private static interface BaseData
     {
+        public int getDaysToAnalyze();
+
         public int getDaysToCreate();
 
         public int getDaysOffset();
@@ -471,6 +529,12 @@ public class OmniFac implements SpawnPointPlugin
             }
 
             daysOffset = fac.numHeartbeats % getDaysToCreate();
+        }
+
+        @Override
+        public int getDaysToAnalyze()
+        {
+            return (int) (getDaysToCreate() * fac.SHIP_ANALYSIS_TIME_MOD);
         }
 
         @Override
@@ -578,6 +642,12 @@ public class OmniFac implements SpawnPointPlugin
             size = stack.getCargoSpacePerUnit();
             stackSize = (int) stack.getMaxSize();
             daysOffset = fac.numHeartbeats % getDaysToCreate();
+        }
+
+        @Override
+        public int getDaysToAnalyze()
+        {
+            return (int) (getDaysToCreate() * fac.WEAPON_ANALYSIS_TIME_MOD);
         }
 
         @Override

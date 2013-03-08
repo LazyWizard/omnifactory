@@ -6,6 +6,8 @@ Unknown goods now must be analyzed before production can begin:
  - Defaults to 1x the production time of the good, can be changed by mods
 Mods can now prevent certain ships and goods from being added to the factory.
 New settings:
+ - setShowAnalysisComplete(boolean showAnalysisComplete)
+   Sets if the station broadcasts when good analysis is done. Defaults to true.
  - setShipAnalysisTimeModifier(float modifier)
    Sets ship blueprint analysis time modifier. Defaults to 1.0.
  - setWeaponAnalysisTimeModifier(float modifier)

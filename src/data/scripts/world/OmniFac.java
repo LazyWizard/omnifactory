@@ -10,7 +10,6 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.SpawnPointPlugin;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
-import java.lang.ref.WeakReference;
 import java.util.*;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
@@ -20,6 +19,7 @@ public class OmniFac implements SpawnPointPlugin
 {
     private static final Map<SectorEntityToken, OmniFac> allFactories = new HashMap();
     private boolean SHOW_ADDED_CARGO = false;
+    private boolean SHOW_ANALYSIS_COMPLETE = true;
     private boolean SHOW_LIMIT_REACHED = true;
     private boolean REMOVE_BROKEN_GOODS = false;
     private float SHIP_ANALYSIS_TIME_MOD = 1.0f;
@@ -35,12 +35,10 @@ public class OmniFac implements SpawnPointPlugin
     private int MAX_HULLS_PER_CRUISER = 2;
     private int MAX_HULLS_PER_CAPITAL = 1;
     private float MAX_STACKS_PER_WEAPON = 0.5f;
-    private Map<String, Integer> shipAnalysisData = new HashMap();
-    private Map<String, Integer> wepAnalysisData = new HashMap();
-    private Map<String, Boolean> restrictedShips = new HashMap();
-    private Map<String, Boolean> restrictedWeps = new HashMap();
     private Map<String, ShipData> shipData = new HashMap();
     private Map<String, WeaponData> wepData = new HashMap();
+    private Map<String, Boolean> restrictedShips = new HashMap();
+    private Map<String, Boolean> restrictedWeps = new HashMap();
     private SectorEntityToken station;
     private long lastHeartbeat;
     private int numHeartbeats = 0;
@@ -110,6 +108,11 @@ public class OmniFac implements SpawnPointPlugin
     public void setShowLimitReached(boolean showLimitReached)
     {
         SHOW_LIMIT_REACHED = showLimitReached;
+    }
+
+    public void setShowAnalysisComplete(boolean showAnalysisComplete)
+    {
+        SHOW_ANALYSIS_COMPLETE = showAnalysisComplete;
     }
 
     public void setRemoveBrokenGoods(boolean removeBrokenGoods)
@@ -217,7 +220,7 @@ public class OmniFac implements SpawnPointPlugin
     public boolean isUnknownShip(FleetMemberAPI ship)
     {
         String id = parseHullName(ship);
-        if (shipData.containsKey(id) || shipAnalysisData.containsKey(id))
+        if (shipData.containsKey(id))
         {
             // Already queued for construction
             return false;
@@ -235,7 +238,7 @@ public class OmniFac implements SpawnPointPlugin
         }
 
         String id = (String) stack.getData();
-        if (wepData.containsKey(id) || wepAnalysisData.containsKey(id))
+        if (wepData.containsKey(id))
         {
             // Already queued for construction
             return false;
@@ -310,36 +313,58 @@ public class OmniFac implements SpawnPointPlugin
 
         SortedSet<String> addedShips = new TreeSet();
         SortedSet<String> addedWeps = new TreeSet();
+        SortedSet<String> analyzedShips = new TreeSet();
+        SortedSet<String> analyzedWeps = new TreeSet();
         SortedSet<String> hitLimit = new TreeSet();
 
         for (BaseData tmp : shipData.values())
         {
-            if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
+            if (!tmp.isAnalyzed())
             {
-                try
+                if (numHeartbeats % tmp.getDaysToAnalyze() == tmp.getDaysOffset())
                 {
-                    if (tmp.create())
+                    tmp.setAnalyzed(true);
+
+                    if (SHOW_ANALYSIS_COMPLETE)
                     {
-                        addedShips.add(tmp.getName() + " (" + tmp.getTotal()
-                                + "/" + tmp.getLimit() + ")");
-                    }
-                    else if (SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
-                    {
-                        hitLimit.add(tmp.getName());
-                        tmp.setWarnedLimit(true);
+                        analyzedShips.add(tmp.getName() + " ("
+                                + tmp.getDaysToCreate() + "d)");
                     }
                 }
-                catch (RuntimeException ex)
+            }
+            else
+            {
+                if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
                 {
-                    Global.getSector().addMessage("Failed to create ship '"
-                            + tmp.getName() + "' (" + tmp.getId()
-                            + ")! Was a required mod disabled?");
-
-                    if (REMOVE_BROKEN_GOODS)
+                    try
                     {
-                        Global.getSector().addMessage("Removing ship '" + tmp.getName()
-                                + "' from " + station.getFullName() + "'s memory banks...");
-                        shipData.remove(tmp.getId());
+                        if (tmp.create())
+                        {
+                            if (SHOW_ADDED_CARGO)
+                            {
+                                addedShips.add(tmp.getName() + " (" + tmp.getTotal()
+                                        + "/" + tmp.getLimit() + ")");
+                            }
+                        }
+                        else if (SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
+                        {
+                            hitLimit.add(tmp.getName());
+                            tmp.setWarnedLimit(true);
+                        }
+                    }
+                    catch (RuntimeException ex)
+                    {
+                        Global.getSector().addMessage("Failed to create ship '"
+                                + tmp.getName() + "' (" + tmp.getId()
+                                + ")! Was a required mod disabled?");
+
+                        if (REMOVE_BROKEN_GOODS)
+                        {
+                            Global.getSector().addMessage("Removed ship '"
+                                    + tmp.getName() + "' from "
+                                    + station.getFullName() + "'s memory banks.");
+                            shipData.remove(tmp.getId());
+                        }
                     }
                 }
             }
@@ -347,32 +372,52 @@ public class OmniFac implements SpawnPointPlugin
 
         for (BaseData tmp : wepData.values())
         {
-            if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
+            if (!tmp.isAnalyzed())
             {
-                try
+                if (numHeartbeats % tmp.getDaysToAnalyze() == tmp.getDaysOffset())
                 {
-                    if (tmp.create())
+                    tmp.setAnalyzed(true);
+
+                    if (SHOW_ANALYSIS_COMPLETE)
                     {
-                        addedWeps.add(tmp.getName() + " (" + tmp.getTotal()
-                                + "/" + tmp.getLimit() + ")");
-                    }
-                    else if (SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
-                    {
-                        hitLimit.add(tmp.getName());
-                        tmp.setWarnedLimit(true);
+                        analyzedWeps.add(tmp.getName() + " ("
+                                + tmp.getDaysToCreate() + "d)");
                     }
                 }
-                catch (RuntimeException ex)
+            }
+            else
+            {
+                if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
                 {
-                    Global.getSector().addMessage("Failed to create weapon '"
-                            + tmp.getName() + "' (" + tmp.getId()
-                            + ")! Was a required mod disabled?");
-
-                    if (REMOVE_BROKEN_GOODS)
+                    try
                     {
-                        Global.getSector().addMessage("Removing weapon '" + tmp.getName()
-                                + "' from " + station.getFullName() + "'s memory banks.,,");
-                        wepData.remove(tmp.getId());
+                        if (tmp.create())
+                        {
+                            if (SHOW_ADDED_CARGO)
+                            {
+                                addedWeps.add(tmp.getName() + " (" + tmp.getTotal()
+                                        + "/" + tmp.getLimit() + ")");
+                            }
+                        }
+                        else if (SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
+                        {
+                            hitLimit.add(tmp.getName());
+                            tmp.setWarnedLimit(true);
+                        }
+                    }
+                    catch (RuntimeException ex)
+                    {
+                        Global.getSector().addMessage("Failed to create weapon '"
+                                + tmp.getName() + "' (" + tmp.getId()
+                                + ")! Was a required mod disabled?");
+
+                        if (REMOVE_BROKEN_GOODS)
+                        {
+                            Global.getSector().addMessage("Removed weapon '"
+                                    + tmp.getName() + "' from "
+                                    + station.getFullName() + "'s memory banks.");
+                            wepData.remove(tmp.getId());
+                        }
                     }
                 }
             }
@@ -400,6 +445,22 @@ public class OmniFac implements SpawnPointPlugin
                     + " has reached its limit for the following goods:",
                     CollectionUtils.implode(hitLimit) + ".", true);
         }
+
+        if (SHOW_ANALYSIS_COMPLETE)
+        {
+            if (!analyzedShips.isEmpty())
+            {
+                MessageUtils.showMessage("The " + station.getFullName()
+                        + " has started production for the following ships:",
+                        CollectionUtils.implode(analyzedShips) + ".", true);
+            }
+            if (!analyzedWeps.isEmpty())
+            {
+                MessageUtils.showMessage("The " + station.getFullName()
+                        + " has started production for the following weapons:",
+                        CollectionUtils.implode(analyzedWeps) + ".", true);
+            }
+        }
     }
 
     public boolean checkCargo()
@@ -426,9 +487,20 @@ public class OmniFac implements SpawnPointPlugin
                 newItem = true;
                 String id = parseHullName(ship);
                 ShipData tmp = new ShipData(ship, this);
+
+                if (SHIP_ANALYSIS_TIME_MOD == 0f)
+                {
+                    tmp.setAnalyzed(true);
+                    newShips.add(tmp.getName() + " ("
+                            + tmp.getDaysToAnalyze() + "d)");
+                }
+                else
+                {
+                    newShips.add(tmp.getName() + " ("
+                            + tmp.getDaysToCreate() + "d)");
+                }
+
                 shipData.put(id, tmp);
-                newShips.add(tmp.getName() + " ("
-                        + tmp.getDaysToCreate() + "d)");
                 cargo.getMothballedShips().removeFleetMember(ship);
             }
         }
@@ -447,38 +519,69 @@ public class OmniFac implements SpawnPointPlugin
             {
                 newItem = true;
                 WeaponData tmp = new WeaponData(stack, this);
+
+                if (WEAPON_ANALYSIS_TIME_MOD == 0f)
+                {
+                    tmp.setAnalyzed(true);
+                    newWeps.add(tmp.getName() + " ("
+                            + tmp.getDaysToAnalyze() + "d)");
+                }
+                else
+                {
+                    newWeps.add(tmp.getName() + " ("
+                            + tmp.getDaysToCreate() + "d)");
+                }
+
                 wepData.put((String) stack.getData(), tmp);
-                newWeps.add(tmp.getName() + " ("
-                        + tmp.getDaysToCreate() + "d)");
                 cargo.removeWeapons((String) stack.getData(), 1);
             }
         }
 
         if (!newShips.isEmpty())
         {
-            MessageUtils.showMessage("New ship blueprints added to the "
-                    + station.getFullName() + ":",
-                    CollectionUtils.implode(newShips) + ".", true);
+            if (SHIP_ANALYSIS_TIME_MOD == 0f)
+            {
+                MessageUtils.showMessage("New ship blueprints added to the "
+                        + station.getFullName() + ":",
+                        CollectionUtils.implode(newShips) + ".", true);
+            }
+            else
+            {
+                MessageUtils.showMessage("The following ships are being"
+                        + " disassembled and analyzed by the "
+                        + station.getFullName() + ":",
+                        CollectionUtils.implode(newShips) + ".", true);
+            }
         }
 
         if (!newWeps.isEmpty())
         {
-            MessageUtils.showMessage("New weapon blueprints added to the "
-                    + station.getFullName() + ":",
-                    CollectionUtils.implode(newWeps) + ".", true);
+            if (WEAPON_ANALYSIS_TIME_MOD == 0f)
+            {
+                MessageUtils.showMessage("New weapon blueprints added to the "
+                        + station.getFullName() + ":",
+                        CollectionUtils.implode(newWeps) + ".", true);
+            }
+            else
+            {
+                MessageUtils.showMessage("The following weapons are being"
+                        + " disassembled and analyzed by the "
+                        + station.getFullName() + ":",
+                        CollectionUtils.implode(newWeps) + ".", true);
+            }
         }
 
         if (!blockedShips.isEmpty())
         {
-            MessageUtils.showMessage("The Omnifactory is unable to replicate"
-                    + " the following ships:",
+            MessageUtils.showMessage("The " + station.getFullName()
+                    + " is unable to replicate the following ships:",
                     CollectionUtils.implode(blockedShips) + ".", true);
         }
 
         if (!blockedWeps.isEmpty())
         {
-            MessageUtils.showMessage("The Omnifactory is unable to replicate"
-                    + " the following weapons:",
+            MessageUtils.showMessage("The " + station.getFullName()
+                    + " is unable to replicate the following weapons:",
                     CollectionUtils.implode(blockedWeps) + ".", true);
         }
 
@@ -524,6 +627,10 @@ public class OmniFac implements SpawnPointPlugin
 
         public void setWarnedLimit(boolean hasWarned);
 
+        public boolean isAnalyzed();
+
+        public void setAnalyzed(boolean isAnalyzed);
+
         public boolean create();
     }
 
@@ -533,7 +640,7 @@ public class OmniFac implements SpawnPointPlugin
         String id, displayName;
         FleetMemberType type;
         int fp, size, daysOffset;
-        boolean warnedLimit = false;
+        boolean warnedLimit = false, isAnalyzed = false;
 
         public ShipData(FleetMemberAPI ship, OmniFac factory)
         {
@@ -568,7 +675,7 @@ public class OmniFac implements SpawnPointPlugin
                 //displayName += " capital";
             }
 
-            daysOffset = fac.numHeartbeats % getDaysToCreate();
+            daysOffset = fac.numHeartbeats % getDaysToAnalyze();
         }
 
         @Override
@@ -651,6 +758,27 @@ public class OmniFac implements SpawnPointPlugin
         }
 
         @Override
+        public boolean isAnalyzed()
+        {
+            return isAnalyzed;
+        }
+
+        @Override
+        public void setAnalyzed(boolean isAnalyzed)
+        {
+            this.isAnalyzed = isAnalyzed;
+
+            if (isAnalyzed)
+            {
+                daysOffset = fac.numHeartbeats % getDaysToCreate();
+            }
+            else
+            {
+                daysOffset = fac.numHeartbeats % getDaysToAnalyze();
+            }
+        }
+
+        @Override
         public boolean create()
         {
             if (getTotal() >= getLimit())
@@ -672,7 +800,7 @@ public class OmniFac implements SpawnPointPlugin
         String id, displayName;
         float size;
         int daysOffset, stackSize;
-        boolean warnedLimit = false;
+        boolean warnedLimit = false, isAnalyzed = false;
 
         public WeaponData(CargoStackAPI stack, OmniFac factory)
         {
@@ -681,7 +809,7 @@ public class OmniFac implements SpawnPointPlugin
             displayName = stack.getDisplayName();
             size = stack.getCargoSpacePerUnit();
             stackSize = (int) stack.getMaxSize();
-            daysOffset = fac.numHeartbeats % getDaysToCreate();
+            daysOffset = fac.numHeartbeats % getDaysToAnalyze();
         }
 
         @Override
@@ -736,6 +864,27 @@ public class OmniFac implements SpawnPointPlugin
         public void setWarnedLimit(boolean hasWarned)
         {
             warnedLimit = hasWarned;
+        }
+
+        @Override
+        public boolean isAnalyzed()
+        {
+            return isAnalyzed;
+        }
+
+        @Override
+        public void setAnalyzed(boolean isAnalyzed)
+        {
+            this.isAnalyzed = isAnalyzed;
+
+            if (isAnalyzed)
+            {
+                daysOffset = fac.numHeartbeats % getDaysToCreate();
+            }
+            else
+            {
+                daysOffset = fac.numHeartbeats % getDaysToAnalyze();
+            }
         }
 
         @Override

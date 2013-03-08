@@ -2,9 +2,9 @@
 =============================
 (this version is not save compatible with earlier versions)
 Unknown goods now must be analyzed before production can begin:
- - Adds time delay before production begins
- - Defaults to 1x the production time of the good, can be changed
-You can now restrict certain ships and goods from being added to the factory.
+ - Adds time delay before the production run will start
+ - Defaults to 1x the production time of the good, can be changed by mods
+Mods can now prevent certain ships and goods from being added to the factory.
 New settings:
  - setShipAnalysisTimeModifier(float modifier)
    Sets ship blueprint analysis time modifier. Defaults to 1.0.

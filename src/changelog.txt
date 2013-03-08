@@ -1,3 +1,33 @@
+ Version 1.7 (March 8, 2013)
+=============================
+(this version is not save compatible with earlier versions)
+Unknown goods now must be analyzed before production can begin:
+ - Adds time delay before production begins
+ - Defaults to 1x the production time of the good, can be changed
+You can now restrict certain ships and goods from being added to the factory.
+New settings:
+ - setShipAnalysisTimeModifier(float modifier)
+   Sets ship blueprint analysis time modifier. Defaults to 1.0.
+ - setWeaponAnalysisTimeModifier(float modifier)
+   Sets weapon blueprint analysis time modifier. Defaults to 1.0.
+ - addRestrictedShip(String hullId)
+   Adds a hull type to the restricted list (can't be replicated).
+ - removeRestrictedShip(String hullId)
+   Removes a hull type from the restricted list.
+ - addRestrictedWeapon(String weaponId)
+   Adds a weapon to the restricted list (can't be replicated).
+ - removeRestrictedWeapon(String weaponId)
+   Removes a weapon from the restricted list.
+Other new methods:
+ - boolean isRestrictedShip(FleetMemberAPI ship)
+   Returns true if this ship can't be reproduced by the Omnifactory.
+ - boolean isRestrictedWeapon(CargoStackAPI stack)
+   Returns true if this weapon can't be reproduced by the Omnifactory.
+
+ Version 1.6b (March 1, 2013)
+==============================
+Removed bundled LazyLib, now requires LazyLib utility mod active to function
+
  Version 1.6 (February 10, 2013)
 ================================
 (this version is not save compatible with earlier versions)

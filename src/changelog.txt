@@ -1,3 +1,7 @@
+ Version 1.7b (March 9, 2013)
+==============================
+Fixed NPE with addRestrictedShip() and addRestrictedWeapon()
+
  Version 1.7 (March 8, 2013)
 =============================
 (this version is not save compatible with earlier versions)

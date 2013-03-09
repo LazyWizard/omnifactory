@@ -22,8 +22,8 @@ public class OmniFac implements SpawnPointPlugin
     private boolean SHOW_ANALYSIS_COMPLETE = true;
     private boolean SHOW_LIMIT_REACHED = true;
     private boolean REMOVE_BROKEN_GOODS = false;
-    private float SHIP_ANALYSIS_TIME_MOD = 1.0f;
-    private float WEAPON_ANALYSIS_TIME_MOD = 1.0f;
+    private float SHIP_ANALYSIS_TIME_MOD = 0.5f;
+    private float WEAPON_ANALYSIS_TIME_MOD = 0.5f;
     private float SHIP_PRODUCTION_TIME_MOD = 1.0f;
     private float WEAPON_PRODUCTION_TIME_MOD = 1.0f;
     private int REQUIRED_CREW = 0;
@@ -192,12 +192,12 @@ public class OmniFac implements SpawnPointPlugin
             hullId = hullId.substring(0, hullId.lastIndexOf("_Hull"));
         }
 
-        return restrictedShips.put(hullId, false);
+        return (restrictedShips.put(hullId, false) != null);
     }
 
     public boolean addRestrictedWeapon(String weaponId)
     {
-        return restrictedWeps.put(weaponId, false);
+        return (restrictedWeps.put(weaponId, false) != null);
     }
 
     public boolean removeRestrictedShip(String hullId)
@@ -207,12 +207,12 @@ public class OmniFac implements SpawnPointPlugin
             hullId = hullId.substring(0, hullId.lastIndexOf("_Hull"));
         }
 
-        return restrictedShips.remove(hullId);
+        return (restrictedShips.remove(hullId) != null);
     }
 
     public boolean removeRestrictedWeapon(String weaponId)
     {
-        return restrictedWeps.remove(weaponId);
+        return (restrictedWeps.remove(weaponId) != null);
     }
     //</editor-fold>
 

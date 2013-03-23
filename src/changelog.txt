@@ -1,3 +1,7 @@
+ Version 1.7c (March 19, 2013)
+===============================
+Fixed divide-by-zero issue when using low custom analysis time modifiers
+
  Version 1.7b (March 9, 2013)
 ==============================
 Fixed NPE with addRestrictedShip() and addRestrictedWeapon()

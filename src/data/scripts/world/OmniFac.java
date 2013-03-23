@@ -681,7 +681,8 @@ public class OmniFac implements SpawnPointPlugin
         @Override
         public int getDaysToAnalyze()
         {
-            return (int) (getDaysToCreate() * fac.SHIP_ANALYSIS_TIME_MOD);
+            return (int) Math.max(1f,
+                    getDaysToCreate() * fac.SHIP_ANALYSIS_TIME_MOD);
         }
 
         @Override
@@ -815,7 +816,8 @@ public class OmniFac implements SpawnPointPlugin
         @Override
         public int getDaysToAnalyze()
         {
-            return (int) (getDaysToCreate() * fac.WEAPON_ANALYSIS_TIME_MOD);
+            return (int) Math.max(1f,
+                    getDaysToCreate() * fac.WEAPON_ANALYSIS_TIME_MOD);
         }
 
         @Override

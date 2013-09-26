@@ -1,3 +1,8 @@
+ Version 1.8 (September 25, 2013)
+==================================
+(this version is not save compatible with earlier versions)
+Fixed memory leak, updated to new ModPlugin system
+
  Version 1.7c (March 19, 2013)
 ===============================
 Fixed divide-by-zero issue when using low custom analysis time modifiers

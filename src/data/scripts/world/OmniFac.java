@@ -1,13 +1,11 @@
 package data.scripts.world;
 
+import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignClockAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.CargoStackAPI;
-import com.fs.starfarer.api.campaign.LocationAPI;
-import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
-import com.fs.starfarer.api.campaign.SpawnPointPlugin;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import java.util.*;
@@ -15,9 +13,9 @@ import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
 @SuppressWarnings("unchecked")
-public class OmniFac implements SpawnPointPlugin
+public class OmniFac implements EveryFrameScript
 {
-    private static final Map<SectorEntityToken, OmniFac> allFactories = new HashMap();
+    private static final String FACTORY_DATA_ID = "lw_omnifac_allfactories";
     private boolean SHOW_ADDED_CARGO = false;
     private boolean SHOW_ANALYSIS_COMPLETE = true;
     private boolean SHOW_LIMIT_REACHED = true;
@@ -49,20 +47,14 @@ public class OmniFac implements SpawnPointPlugin
     {
         this.station = station;
         lastHeartbeat = Global.getSector().getClock().getTimestamp();
-        allFactories.put(station, this);
-    }
-
-    public Object readResolve()
-    {
-        allFactories.put(this.station, this);
-        return this;
+        getFactoryMap().put(station, this);
     }
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="Static methods">
     public static boolean isFactory(SectorEntityToken station)
     {
-        return allFactories.keySet().contains(station);
+        return getFactoryMap().keySet().contains(station);
     }
 
     public static OmniFac getFactory(SectorEntityToken station)
@@ -72,12 +64,26 @@ public class OmniFac implements SpawnPointPlugin
             return null;
         }
 
-        return allFactories.get(station);
+        return (OmniFac) getFactoryMap().get(station);
+    }
+
+    private static Map getFactoryMap()
+    {
+                Map data = Global.getSector().getPersistentData();
+        Map allFactories = (HashMap) data.get(FACTORY_DATA_ID);
+
+        if (allFactories == null)
+        {
+            allFactories = new HashMap();
+            data.put(FACTORY_DATA_ID, allFactories);
+        }
+
+        return allFactories;
     }
 
     public static List<SectorEntityToken> getFactories()
     {
-        return new ArrayList(allFactories.keySet());
+        return new ArrayList(getFactoryMap().keySet());
     }
 
     public static String parseHullName(FleetMemberAPI ship)
@@ -589,9 +595,21 @@ public class OmniFac implements SpawnPointPlugin
     }
 
     @Override
-    public void advance(SectorAPI sector, LocationAPI location)
+    public boolean isDone()
     {
-        CampaignClockAPI clock = sector.getClock();
+        return false;
+    }
+
+    @Override
+    public boolean runWhilePaused()
+    {
+        return false;
+    }
+
+    @Override
+    public void advance(float amount)
+    {
+        CampaignClockAPI clock = Global.getSector().getClock();
 
         if (clock.getElapsedDaysSince(lastHeartbeat) >= 1f)
         {

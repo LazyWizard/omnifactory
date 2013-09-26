@@ -1,9 +1,9 @@
  Version 1.8 (September 26, 2013)
 ==================================
 (this version is not save compatible with earlier versions)
-Fixed memory leak with getFactories(), updated to new ModPlugin system
+Fixed memory leak with factory lookup, updated to new ModPlugin system
 Added loadSettingsFromJSON(String filePath)
- - see data/config/omnifac_settings.json for the default settings
+ - see data/config/omnifac_settings.json for the default Omnifactory settings
  - modders can call a different settings file for each factory
 
  Version 1.7c (March 19, 2013)

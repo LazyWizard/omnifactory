@@ -114,8 +114,6 @@ public class OmniFac implements EveryFrameScript
     //<editor-fold defaultstate="collapsed" desc="Factory settings">
     public void loadSettingsFromJSON(String filePath)
     {
-        Global.getLogger(OmniFac.class).log(Level.INFO,
-                "Loading settings from " + filePath);
         try
         {
             JSONObject settings = Global.getSettings().loadJSON(filePath);
@@ -141,12 +139,17 @@ public class OmniFac implements EveryFrameScript
         {
             Global.getLogger(OmniFac.class).log(Level.ERROR,
                     "Failed to load " + filePath, ex);
+            return;
         }
         catch (JSONException ex)
         {
             Global.getLogger(OmniFac.class).log(Level.ERROR,
                     "Failed to parse " + filePath, ex);
+            return;
         }
+
+        Global.getLogger(OmniFac.class).log(Level.INFO,
+                "Loaded settings successfully");
     }
 
     public void setShowAddedCargo(boolean showAddedCargo)

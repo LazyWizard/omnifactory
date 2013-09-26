@@ -8,7 +8,16 @@ import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import org.apache.log4j.Level;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
@@ -16,6 +25,7 @@ import org.lazywizard.lazylib.campaign.MessageUtils;
 public class OmniFac implements EveryFrameScript
 {
     private static final String FACTORY_DATA_ID = "lw_omnifac_allfactories";
+    // TODO: Move all these settings to a json
     private boolean SHOW_ADDED_CARGO = false;
     private boolean SHOW_ANALYSIS_COMPLETE = true;
     private boolean SHOW_LIMIT_REACHED = true;
@@ -59,23 +69,19 @@ public class OmniFac implements EveryFrameScript
 
     public static OmniFac getFactory(SectorEntityToken station)
     {
-        if (!isFactory(station))
-        {
-            return null;
-        }
-
         return (OmniFac) getFactoryMap().get(station);
     }
 
     private static Map getFactoryMap()
     {
-                Map data = Global.getSector().getPersistentData();
-        Map allFactories = (HashMap) data.get(FACTORY_DATA_ID);
+        Map allFactories = (HashMap) Global.getSector()
+                .getPersistentData().get(FACTORY_DATA_ID);
 
         if (allFactories == null)
         {
             allFactories = new HashMap();
-            data.put(FACTORY_DATA_ID, allFactories);
+            Global.getSector().getPersistentData()
+                    .put(FACTORY_DATA_ID, allFactories);
         }
 
         return allFactories;
@@ -106,6 +112,43 @@ public class OmniFac implements EveryFrameScript
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="Factory settings">
+    public void loadSettingsFromJSON(String filePath)
+    {
+        Global.getLogger(OmniFac.class).log(Level.INFO,
+                "Loading settings from " + filePath);
+        try
+        {
+            JSONObject settings = Global.getSettings().loadJSON(filePath);
+            SHOW_ADDED_CARGO = settings.getBoolean("showAddedCargo");
+            SHOW_ANALYSIS_COMPLETE = settings.getBoolean("showAnalysisComplete");
+            SHOW_LIMIT_REACHED = settings.getBoolean("showLimitReached");
+            REMOVE_BROKEN_GOODS = settings.getBoolean("removeBrokenGoods");
+            SHIP_ANALYSIS_TIME_MOD = (float) settings.getDouble("shipAnalysisTimeMod");
+            WEAPON_ANALYSIS_TIME_MOD = (float) settings.getDouble("weaponAnalysisTimeMod");
+            SHIP_PRODUCTION_TIME_MOD = (float) settings.getDouble("shipProductionTimeMod");
+            WEAPON_PRODUCTION_TIME_MOD = (float) settings.getDouble("weaponProductionTimeMod");
+            REQUIRED_CREW = settings.getInt("requiredCrewToFunction");
+            REQUIRED_SUPPLIES_PER_DAY = (float) settings.getDouble("requiredSuppliesPerDay");
+            REQUIRED_FUEL_PER_DAY = (float) settings.getDouble("requiredFuelPerDay");
+            MAX_HULLS_PER_FIGHTER = settings.getInt("maxHullsPerFighter");
+            MAX_HULLS_PER_FRIGATE = settings.getInt("maxHullsPerFrigate");
+            MAX_HULLS_PER_DESTROYER = settings.getInt("maxHullsPerDestroyer");
+            MAX_HULLS_PER_CRUISER = settings.getInt("maxHullsPerCruiser");
+            MAX_HULLS_PER_CAPITAL = settings.getInt("maxHullsPerCapital");
+            MAX_STACKS_PER_WEAPON = (float) settings.getDouble("maxStacksPerWeapon");
+        }
+        catch (IOException ex)
+        {
+            Global.getLogger(OmniFac.class).log(Level.ERROR,
+                    "Failed to load " + filePath, ex);
+        }
+        catch (JSONException ex)
+        {
+            Global.getLogger(OmniFac.class).log(Level.ERROR,
+                    "Failed to parse " + filePath, ex);
+        }
+    }
+
     public void setShowAddedCargo(boolean showAddedCargo)
     {
         SHOW_ADDED_CARGO = showAddedCargo;

@@ -43,11 +43,11 @@ public class OmniFac implements EveryFrameScript
     private int MAX_HULLS_PER_CRUISER = 2;
     private int MAX_HULLS_PER_CAPITAL = 1;
     private float MAX_STACKS_PER_WEAPON = 0.5f;
-    private Map<String, ShipData> shipData = new HashMap();
-    private Map<String, WeaponData> wepData = new HashMap();
-    private Map<String, Boolean> restrictedShips = new HashMap();
-    private Map<String, Boolean> restrictedWeps = new HashMap();
-    private SectorEntityToken station;
+    private final Map<String, ShipData> shipData = new HashMap<>();
+    private final Map<String, WeaponData> wepData = new HashMap<>();
+    private final Map<String, Boolean> restrictedShips = new HashMap<>();
+    private final Map<String, Boolean> restrictedWeps = new HashMap<>();
+    private final SectorEntityToken station;
     private long lastHeartbeat;
     private int numHeartbeats = 0;
     private boolean warnedRequirements = true;
@@ -69,17 +69,17 @@ public class OmniFac implements EveryFrameScript
 
     public static OmniFac getFactory(SectorEntityToken station)
     {
-        return (OmniFac) getFactoryMap().get(station);
+        return getFactoryMap().get(station);
     }
 
-    private static Map getFactoryMap()
+    private static Map<SectorEntityToken, OmniFac> getFactoryMap()
     {
-        Map allFactories = (HashMap) Global.getSector()
+        Map<SectorEntityToken, OmniFac> allFactories = (HashMap) Global.getSector()
                 .getPersistentData().get(FACTORY_DATA_ID);
 
         if (allFactories == null)
         {
-            allFactories = new HashMap();
+            allFactories = new HashMap<>();
             Global.getSector().getPersistentData()
                     .put(FACTORY_DATA_ID, allFactories);
         }
@@ -100,14 +100,6 @@ public class OmniFac implements EveryFrameScript
         }
 
         return ship.getHullId();
-    }
-
-    public static String getDisplayName(FleetMemberAPI ship)
-    {
-        String displayName = parseHullName(ship);
-        displayName = Character.toUpperCase(displayName.charAt(0))
-                + displayName.substring(1).replace('_', ' ');
-        return displayName;
     }
     //</editor-fold>
 
@@ -320,7 +312,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!warnedRequirements)
             {
-                Global.getSector().addMessage("The " + station.getFullName()
+                Global.getSector().addMessage("The " + station.getName()
                         + " needs " + (REQUIRED_CREW - cargo.getTotalCrew())
                         + " more crew to function.");
             }
@@ -332,7 +324,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!warnedRequirements)
             {
-                Global.getSector().addMessage("The " + station.getFullName()
+                Global.getSector().addMessage("The " + station.getName()
                         + " is out of fuel. It requires " + REQUIRED_FUEL_PER_DAY
                         + " per day to function.");
             }
@@ -344,7 +336,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!warnedRequirements)
             {
-                Global.getSector().addMessage("The " + station.getFullName()
+                Global.getSector().addMessage("The " + station.getName()
                         + " is out of supplies. It requires " + REQUIRED_SUPPLIES_PER_DAY
                         + " per day to function.");
             }
@@ -414,7 +406,7 @@ public class OmniFac implements EveryFrameScript
                         {
                             Global.getSector().addMessage("Removed ship '"
                                     + tmp.getName() + "' from "
-                                    + station.getFullName() + "'s memory banks.");
+                                    + station.getName() + "'s memory banks.");
                             shipData.remove(tmp.getId());
                         }
                     }
@@ -467,7 +459,7 @@ public class OmniFac implements EveryFrameScript
                         {
                             Global.getSector().addMessage("Removed weapon '"
                                     + tmp.getName() + "' from "
-                                    + station.getFullName() + "'s memory banks.");
+                                    + station.getName() + "'s memory banks.");
                             wepData.remove(tmp.getId());
                         }
                     }
@@ -479,13 +471,13 @@ public class OmniFac implements EveryFrameScript
         {
             if (!addedShips.isEmpty())
             {
-                MessageUtils.showMessage("The " + station.getFullName()
+                MessageUtils.showMessage("The " + station.getName()
                         + " has produced the following ships:",
                         CollectionUtils.implode(addedShips) + ".", true);
             }
             if (!addedWeps.isEmpty())
             {
-                MessageUtils.showMessage("The " + station.getFullName()
+                MessageUtils.showMessage("The " + station.getName()
                         + " has produced the following weapons:",
                         CollectionUtils.implode(addedWeps) + ".", true);
             }
@@ -493,7 +485,7 @@ public class OmniFac implements EveryFrameScript
 
         if (SHOW_LIMIT_REACHED && !hitLimit.isEmpty())
         {
-            MessageUtils.showMessage("The " + station.getFullName()
+            MessageUtils.showMessage("The " + station.getName()
                     + " has reached its limit for the following goods:",
                     CollectionUtils.implode(hitLimit) + ".", true);
         }
@@ -502,13 +494,13 @@ public class OmniFac implements EveryFrameScript
         {
             if (!analyzedShips.isEmpty())
             {
-                MessageUtils.showMessage("The " + station.getFullName()
+                MessageUtils.showMessage("The " + station.getName()
                         + " has started production for the following ships:",
                         CollectionUtils.implode(analyzedShips) + ".", true);
             }
             if (!analyzedWeps.isEmpty())
             {
-                MessageUtils.showMessage("The " + station.getFullName()
+                MessageUtils.showMessage("The " + station.getName()
                         + " has started production for the following weapons:",
                         CollectionUtils.implode(analyzedWeps) + ".", true);
             }
@@ -530,7 +522,7 @@ public class OmniFac implements EveryFrameScript
             {
                 if (!restrictedShips.get(parseHullName(ship)))
                 {
-                    blockedShips.add(getDisplayName(ship));
+                    blockedShips.add(ship.getHullSpec().getHullName());
                     restrictedShips.put(parseHullName(ship), true);
                 }
             }
@@ -553,6 +545,16 @@ public class OmniFac implements EveryFrameScript
                 }
 
                 shipData.put(id, tmp);
+
+                // Add all weapons on this ship to the station's cargo
+                if (!ship.isFighterWing())
+                {
+                    for (String slot : ship.getVariant().getNonBuiltInWeaponSlots())
+                    {
+                        cargo.addWeapons(ship.getVariant().getWeaponId(slot), 1);
+                    }
+                }
+
                 cargo.getMothballedShips().removeFleetMember(ship);
             }
         }
@@ -594,14 +596,14 @@ public class OmniFac implements EveryFrameScript
             if (SHIP_ANALYSIS_TIME_MOD == 0f)
             {
                 MessageUtils.showMessage("New ship blueprints added to the "
-                        + station.getFullName() + ":",
+                        + station.getName() + ":",
                         CollectionUtils.implode(newShips) + ".", true);
             }
             else
             {
                 MessageUtils.showMessage("The following ships are being"
                         + " disassembled and analyzed by the "
-                        + station.getFullName() + ":",
+                        + station.getName() + ":",
                         CollectionUtils.implode(newShips) + ".", true);
             }
         }
@@ -611,28 +613,28 @@ public class OmniFac implements EveryFrameScript
             if (WEAPON_ANALYSIS_TIME_MOD == 0f)
             {
                 MessageUtils.showMessage("New weapon blueprints added to the "
-                        + station.getFullName() + ":",
+                        + station.getName() + ":",
                         CollectionUtils.implode(newWeps) + ".", true);
             }
             else
             {
                 MessageUtils.showMessage("The following weapons are being"
                         + " disassembled and analyzed by the "
-                        + station.getFullName() + ":",
+                        + station.getName() + ":",
                         CollectionUtils.implode(newWeps) + ".", true);
             }
         }
 
         if (!blockedShips.isEmpty())
         {
-            MessageUtils.showMessage("The " + station.getFullName()
+            MessageUtils.showMessage("The " + station.getName()
                     + " is unable to replicate the following ships:",
                     CollectionUtils.implode(blockedShips) + ".", true);
         }
 
         if (!blockedWeps.isEmpty())
         {
-            MessageUtils.showMessage("The " + station.getFullName()
+            MessageUtils.showMessage("The " + station.getName()
                     + " is unable to replicate the following weapons:",
                     CollectionUtils.implode(blockedWeps) + ".", true);
         }
@@ -710,7 +712,7 @@ public class OmniFac implements EveryFrameScript
         {
             fac = factory;
             id = parseHullName(ship);
-            displayName = getDisplayName(ship);
+            displayName = ship.getHullSpec().getHullName();
             type = ship.getType();
             fp = ship.getFleetPointCost();
 

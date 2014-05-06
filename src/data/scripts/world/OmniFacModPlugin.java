@@ -6,70 +6,16 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class OmniFacModPlugin extends BaseModPlugin
 {
-    private static final String OMNIFAC_ENABLED_FLAG = "lw_omnifac_enabled";
+    private static final String OMNIFAC_SETTINGS_FILE = "data/config/omnifac_settings.json";
     private static final String STATION_NAME = "Omnifactory";
     private static final String STATION_FACTION = "player";
 
-    // Responsible for creating the spawnpoint and adjusting factory settings
-    // If you wish to modify a default, uncomment and change the relevent line
     private static void initStation(SectorEntityToken station, StarSystemAPI system)
     {
-        OmniFac factory = new OmniFac(station, "data/config/omnifac_settings.json");
-
-        // Should the player be able to freely take goods from the factory?
-        //station.getCargo().setFreeTransfer(false);
-
-        // Sets if 'X added to station' messages appear. Defaults to false.
-        //factory.setShowAddedCargo(false);
-        // Sets if the station broadcasts when good analysis is done. Defaults to true.
-        //factory.setShowAnalysisComplete(true);
-        // Sets if 'Limit for X reached' messages appear. Defaults to true.
-        //factory.setShowLimitReached(true);
-        // Sets if buggy goods should be removed from memory. Defaults to false.
-        //factory.setRemoveBrokenGoods(false);
-
-        // Adds a hull type to the restricted list (can't be replicated). Defaults: none.
-        //factory.addRestrictedShip("shuttle");
-        // Removes a hull type from the restricted list.
-        //factory.removeRestrictedShip("shuttle");
-        // Adds a weapon to the restricted list (can't be replicated). Defaults: none.
-        //factory.addRestrictedWeapon("lightmg");
-        // Removes a weapon from the restricted list.
-        //removeRestrictedWeapon("lightmg");
-
-        // Sets ship blueprint analysis time modifier. Defaults to 1.0.
-        //factory.setShipAnalysisTimeModifier(1.0f);
-        // Sets weapon blueprint analysis time modifier. Defaults to 1.0.
-        //factory.setWeaponAnalysisTimeModifier(1.0f);
-        // Sets ship production time modifier. Defaults to 1.0.
-        //factory.setShipProductionTimeModifier(1.0f);
-        // Sets weapon production time modifier. Defaults to 1.0.
-        //factory.setWeaponProductionTimeModifier(1.0f);
-
-        // Sets the minimum amount of crew for the factory to function. Defaults to 0.
-        //factory.setRequiredCrew(0);
-        // Sets factory supply consumption per day. Defaults to 0.
-        //factory.setRequiredSuppliesPerDay(0f);
-        // Sets factory fuel consumption per day. Defaults to 0.
-        //factory.setRequiredFuelPerDay(0f);
-
-        // Sets how many of each fighter to produce. Retroactive. Defaults to 3.
-        //factory.setMaxHullsPerFighter(3);
-        // Sets how many of each frigate to produce. Retroactive. Defaults to 3.
-        //factory.setMaxHullsPerFrigate(3);
-        // Sets how many of each destroyer to produce. Retroactive. Defaults to 2.
-        //factory.setMaxHullsPerDestroyer(2);
-        // Sets how many of each cruiser to produce. Retroactive. Defaults to 2.
-        //factory.setMaxHullsPerCruiser(2);
-        // Sets how many of each capital ship to produce. Retroactive. Defaults to 1.
-        //factory.setMaxHullsPerCapital(1);
-        // Sets how many stacks of each weapon to produce. Defaults to 0.5.
-        //factory.setMaxStacksPerWeapon(0.5f);
-
+        OmniFac factory = new OmniFac(station, OMNIFAC_SETTINGS_FILE);
         system.addScript(factory);
     }
 
@@ -156,18 +102,22 @@ public class OmniFacModPlugin extends BaseModPlugin
 
     private static void initOmniFac()
     {
-        StarSystemAPI system = (StarSystemAPI) Global.getSector().getStarSystems().get(0);
+        StarSystemAPI system = Global.getSector().getStarSystems().get(0);
         createStation(system);
     }
 
     @Override
     public void onEnabled(boolean wasEnabledBefore)
     {
-        Map data = Global.getSector().getPersistentData();
-        if (!data.containsKey(OMNIFAC_ENABLED_FLAG))
+        if (!wasEnabledBefore)
         {
-            data.put(OMNIFAC_ENABLED_FLAG, true);
             initOmniFac();
         }
+    }
+
+    @Override
+    public void onGameLoad()
+    {
+        Global.getSector().registerPlugin(new OmniFacCampaignPlugin());
     }
 }

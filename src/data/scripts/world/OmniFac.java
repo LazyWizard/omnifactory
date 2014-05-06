@@ -8,12 +8,14 @@ import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import org.apache.log4j.Level;
+import org.json.JSONException;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
@@ -23,16 +25,6 @@ public class OmniFac implements EveryFrameScript
     private static final String FACTORY_DATA_ID = "lw_omnifac_allfactories";
     private String settingsFile;
     private transient OmniFacSettings settings;
-    // TODO: These are only here for backwards compatibility, remove after next SS update
-    private transient boolean SHOW_ADDED_CARGO, SHOW_ANALYSIS_COMPLETE,
-            SHOW_LIMIT_REACHED, REMOVE_BROKEN_GOODS;
-    private transient float SHIP_ANALYSIS_TIME_MOD, WEAPON_ANALYSIS_TIME_MOD,
-            SHIP_PRODUCTION_TIME_MOD, WEAPON_PRODUCTION_TIME_MOD;
-    private transient int REQUIRED_CREW = 0;
-    private transient float REQUIRED_SUPPLIES_PER_DAY, REQUIRED_FUEL_PER_DAY;
-    private transient int MAX_HULLS_PER_FIGHTER, MAX_HULLS_PER_FRIGATE,
-            MAX_HULLS_PER_DESTROYER, MAX_HULLS_PER_CRUISER, MAX_HULLS_PER_CAPITAL;
-    private transient float MAX_STACKS_PER_WEAPON;
     private final Map<String, ShipData> shipData = new HashMap<>();
     private final Map<String, WeaponData> wepData = new HashMap<>();
     private final Map<String, Boolean> restrictedShips = new HashMap<>();
@@ -47,7 +39,7 @@ public class OmniFac implements EveryFrameScript
     {
         this.station = station;
         lastHeartbeat = Global.getSector().getClock().getTimestamp();
-        settings = new OmniFacSettings(settingsFile);
+        reloadSettings(settingsFile);
         getFactoryMap().put(station, this);
     }
 
@@ -58,7 +50,7 @@ public class OmniFac implements EveryFrameScript
             settingsFile = "data/config/omnifac_settings.json";
         }
 
-        settings = new OmniFacSettings(settingsFile);
+        reloadSettings(settingsFile);
         return this;
     }
     //</editor-fold>
@@ -76,7 +68,8 @@ public class OmniFac implements EveryFrameScript
 
     private static Map<SectorEntityToken, OmniFac> getFactoryMap()
     {
-        Map<SectorEntityToken, OmniFac> allFactories = (HashMap) Global.getSector()
+        Map<SectorEntityToken, OmniFac> allFactories
+                = (Map<SectorEntityToken, OmniFac>) Global.getSector()
                 .getPersistentData().get(FACTORY_DATA_ID);
 
         if (allFactories == null)
@@ -106,6 +99,35 @@ public class OmniFac implements EveryFrameScript
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="Factory settings">
+    public OmniFacSettings getSettings()
+    {
+        return settings;
+    }
+
+    public void reloadSettings(String settingsFile)
+    {
+        try
+        {
+            settings = new OmniFacSettings(settingsFile);
+        }
+        catch (IOException ex)
+        {
+            Global.getLogger(OmniFac.class).log(Level.ERROR,
+                    "Failed to load settings file: " + settingsFile, ex);
+            return;
+        }
+        catch (JSONException ex)
+        {
+            Global.getLogger(OmniFac.class).log(Level.ERROR,
+                    "Failed to parse settings file: " + settingsFile, ex);
+            return;
+        }
+
+        this.settingsFile = settingsFile;
+        Global.getLogger(OmniFac.class).log(Level.INFO,
+                "Loaded settings successfully");
+    }
+
     public boolean addRestrictedShip(String hullId)
     {
         if (hullId.endsWith("_Hull"))
@@ -141,31 +163,14 @@ public class OmniFac implements EveryFrameScript
     public boolean isUnknownShip(FleetMemberAPI ship)
     {
         String id = parseHullName(ship);
-        if (shipData.containsKey(id))
-        {
-            // Already queued for construction
-            return false;
-        }
-
-        return true;
+        return !shipData.containsKey(id);
     }
 
     public boolean isUnknownWeapon(CargoStackAPI stack)
     {
-        if (!stack.isWeaponStack())
-        {
-            // We only deal with weapons, not resources
-            return false;
-        }
-
+        // We only deal with weapons, not resources
         String id = (String) stack.getData();
-        if (wepData.containsKey(id))
-        {
-            // Already queued for construction
-            return false;
-        }
-
-        return true;
+        return (stack.isWeaponStack() && !wepData.containsKey(id));
     }
 
     public boolean isRestrictedShip(FleetMemberAPI ship)
@@ -185,36 +190,36 @@ public class OmniFac implements EveryFrameScript
         boolean metRequirements = true;
         CargoAPI cargo = station.getCargo();
 
-        if (cargo.getTotalCrew() < settings.REQUIRED_CREW)
+        if (cargo.getTotalCrew() < settings.getRequiredCrew())
         {
             if (!warnedRequirements)
             {
                 Global.getSector().addMessage("The " + station.getName()
-                        + " needs " + (settings.REQUIRED_CREW - cargo.getTotalCrew())
+                        + " needs " + (settings.getRequiredCrew() - cargo.getTotalCrew())
                         + " more crew to function.");
             }
 
             metRequirements = false;
         }
 
-        if (cargo.getFuel() < settings.REQUIRED_FUEL_PER_DAY)
+        if (cargo.getFuel() < settings.getRequiredFuelPerDay())
         {
             if (!warnedRequirements)
             {
                 Global.getSector().addMessage("The " + station.getName()
-                        + " is out of fuel. It requires " + settings.REQUIRED_FUEL_PER_DAY
+                        + " is out of fuel. It requires " + settings.getRequiredFuelPerDay()
                         + " per day to function.");
             }
 
             metRequirements = false;
         }
 
-        if (cargo.getSupplies() < settings.REQUIRED_SUPPLIES_PER_DAY)
+        if (cargo.getSupplies() < settings.getRequiredSuppliesPerDay())
         {
             if (!warnedRequirements)
             {
                 Global.getSector().addMessage("The " + station.getName()
-                        + " is out of supplies. It requires " + settings.REQUIRED_SUPPLIES_PER_DAY
+                        + " is out of supplies. It requires " + settings.getRequiredSuppliesPerDay()
                         + " per day to function.");
             }
 
@@ -228,15 +233,15 @@ public class OmniFac implements EveryFrameScript
         }
 
         warnedRequirements = false;
-        cargo.removeSupplies(settings.REQUIRED_SUPPLIES_PER_DAY);
-        cargo.removeFuel(settings.REQUIRED_FUEL_PER_DAY);
+        cargo.removeSupplies(settings.getRequiredSuppliesPerDay());
+        cargo.removeFuel(settings.getRequiredFuelPerDay());
         numHeartbeats++;
 
-        SortedSet<String> addedShips = new TreeSet();
-        SortedSet<String> addedWeps = new TreeSet();
-        SortedSet<String> analyzedShips = new TreeSet();
-        SortedSet<String> analyzedWeps = new TreeSet();
-        SortedSet<String> hitLimit = new TreeSet();
+        List<String> addedShips = new ArrayList();
+        List<String> addedWeps = new ArrayList();
+        List<String> analyzedShips = new ArrayList();
+        List<String> analyzedWeps = new ArrayList();
+        List<String> hitLimit = new ArrayList();
 
         for (BaseData tmp : shipData.values())
         {
@@ -246,7 +251,7 @@ public class OmniFac implements EveryFrameScript
                 {
                     tmp.setAnalyzed(true);
 
-                    if (settings.SHOW_ANALYSIS_COMPLETE)
+                    if (settings.shouldShowAnalysisComplete())
                     {
                         analyzedShips.add(tmp.getName() + " ("
                                 + tmp.getDaysToCreate() + "d)");
@@ -261,13 +266,13 @@ public class OmniFac implements EveryFrameScript
                     {
                         if (tmp.create())
                         {
-                            if (settings.SHOW_ADDED_CARGO)
+                            if (settings.shouldShowAddedCargo())
                             {
                                 addedShips.add(tmp.getName() + " (" + tmp.getTotal()
                                         + "/" + tmp.getLimit() + ")");
                             }
                         }
-                        else if (settings.SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
+                        else if (settings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
                         {
                             hitLimit.add(tmp.getName());
                             tmp.setWarnedLimit(true);
@@ -279,7 +284,7 @@ public class OmniFac implements EveryFrameScript
                                 + tmp.getName() + "' (" + tmp.getId()
                                 + ")! Was a required mod disabled?");
 
-                        if (settings.REMOVE_BROKEN_GOODS)
+                        if (settings.shouldRemoveBrokenGoods())
                         {
                             Global.getSector().addMessage("Removed ship '"
                                     + tmp.getName() + "' from "
@@ -299,7 +304,7 @@ public class OmniFac implements EveryFrameScript
                 {
                     tmp.setAnalyzed(true);
 
-                    if (settings.SHOW_ANALYSIS_COMPLETE)
+                    if (settings.shouldShowAnalysisComplete())
                     {
                         analyzedWeps.add(tmp.getName() + " ("
                                 + tmp.getDaysToCreate() + "d)");
@@ -314,13 +319,13 @@ public class OmniFac implements EveryFrameScript
                     {
                         if (tmp.create())
                         {
-                            if (settings.SHOW_ADDED_CARGO)
+                            if (settings.shouldShowAddedCargo())
                             {
                                 addedWeps.add(tmp.getName() + " (" + tmp.getTotal()
                                         + "/" + tmp.getLimit() + ")");
                             }
                         }
-                        else if (settings.SHOW_LIMIT_REACHED && !tmp.hasWarnedLimit())
+                        else if (settings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
                         {
                             hitLimit.add(tmp.getName());
                             tmp.setWarnedLimit(true);
@@ -332,7 +337,7 @@ public class OmniFac implements EveryFrameScript
                                 + tmp.getName() + "' (" + tmp.getId()
                                 + ")! Was a required mod disabled?");
 
-                        if (settings.REMOVE_BROKEN_GOODS)
+                        if (settings.shouldRemoveBrokenGoods())
                         {
                             Global.getSector().addMessage("Removed weapon '"
                                     + tmp.getName() + "' from "
@@ -344,39 +349,44 @@ public class OmniFac implements EveryFrameScript
             }
         }
 
-        if (settings.SHOW_ADDED_CARGO)
+        if (settings.shouldShowAddedCargo())
         {
             if (!addedShips.isEmpty())
             {
+                Collections.sort(addedShips);
                 MessageUtils.showMessage("The " + station.getName()
                         + " has produced the following ships:",
                         CollectionUtils.implode(addedShips) + ".", true);
             }
             if (!addedWeps.isEmpty())
             {
+                Collections.sort(addedWeps);
                 MessageUtils.showMessage("The " + station.getName()
                         + " has produced the following weapons:",
                         CollectionUtils.implode(addedWeps) + ".", true);
             }
         }
 
-        if (settings.SHOW_LIMIT_REACHED && !hitLimit.isEmpty())
+        if (settings.shouldShowLimitReached() && !hitLimit.isEmpty())
         {
+            Collections.sort(hitLimit);
             MessageUtils.showMessage("The " + station.getName()
                     + " has reached its limit for the following goods:",
                     CollectionUtils.implode(hitLimit) + ".", true);
         }
 
-        if (settings.SHOW_ANALYSIS_COMPLETE)
+        if (settings.shouldShowAnalysisComplete())
         {
             if (!analyzedShips.isEmpty())
             {
+                Collections.sort(analyzedShips);
                 MessageUtils.showMessage("The " + station.getName()
                         + " has started production for the following ships:",
                         CollectionUtils.implode(analyzedShips) + ".", true);
             }
             if (!analyzedWeps.isEmpty())
             {
+                Collections.sort(analyzedWeps);
                 MessageUtils.showMessage("The " + station.getName()
                         + " has started production for the following weapons:",
                         CollectionUtils.implode(analyzedWeps) + ".", true);
@@ -388,10 +398,10 @@ public class OmniFac implements EveryFrameScript
     {
         boolean newItem = false;
         CargoAPI cargo = station.getCargo();
-        SortedSet<String> newShips = new TreeSet();
-        SortedSet<String> blockedShips = new TreeSet();
-        SortedSet<String> newWeps = new TreeSet();
-        SortedSet<String> blockedWeps = new TreeSet();
+        List<String> newShips = new ArrayList();
+        List<String> blockedShips = new ArrayList();
+        List<String> newWeps = new ArrayList();
+        List<String> blockedWeps = new ArrayList();
 
         for (FleetMemberAPI ship : cargo.getMothballedShips().getMembersListCopy())
         {
@@ -409,7 +419,7 @@ public class OmniFac implements EveryFrameScript
                 String id = parseHullName(ship);
                 ShipData tmp = new ShipData(ship, this);
 
-                if (settings.SHIP_ANALYSIS_TIME_MOD == 0f)
+                if (settings.getShipAnalysisTimeMod() == 0f)
                 {
                     tmp.setAnalyzed(true);
                     newShips.add(tmp.getName() + " ("
@@ -451,7 +461,7 @@ public class OmniFac implements EveryFrameScript
                 newItem = true;
                 WeaponData tmp = new WeaponData(stack, this);
 
-                if (settings.WEAPON_ANALYSIS_TIME_MOD == 0f)
+                if (settings.getWeaponAnalysisTimeMod() == 0f)
                 {
                     tmp.setAnalyzed(true);
                     newWeps.add(tmp.getName() + " ("
@@ -470,7 +480,8 @@ public class OmniFac implements EveryFrameScript
 
         if (!newShips.isEmpty())
         {
-            if (settings.SHIP_ANALYSIS_TIME_MOD == 0f)
+            Collections.sort(newShips);
+            if (settings.getShipAnalysisTimeMod() == 0f)
             {
                 MessageUtils.showMessage("New ship blueprints added to the "
                         + station.getName() + ":",
@@ -487,7 +498,8 @@ public class OmniFac implements EveryFrameScript
 
         if (!newWeps.isEmpty())
         {
-            if (settings.WEAPON_ANALYSIS_TIME_MOD == 0f)
+            Collections.sort(newWeps);
+            if (settings.getWeaponAnalysisTimeMod() == 0f)
             {
                 MessageUtils.showMessage("New weapon blueprints added to the "
                         + station.getName() + ":",
@@ -504,6 +516,7 @@ public class OmniFac implements EveryFrameScript
 
         if (!blockedShips.isEmpty())
         {
+            Collections.sort(blockedShips);
             MessageUtils.showMessage("The " + station.getName()
                     + " is unable to replicate the following ships:",
                     CollectionUtils.implode(blockedShips) + ".", true);
@@ -511,6 +524,7 @@ public class OmniFac implements EveryFrameScript
 
         if (!blockedWeps.isEmpty())
         {
+            Collections.sort(blockedWeps);
             MessageUtils.showMessage("The " + station.getName()
                     + " is unable to replicate the following weapons:",
                     CollectionUtils.implode(blockedWeps) + ".", true);
@@ -577,7 +591,7 @@ public class OmniFac implements EveryFrameScript
         public boolean create();
     }
 
-    private static final class ShipData implements BaseData
+    private static class ShipData implements BaseData
     {
         OmniFac fac;
         String id, displayName;
@@ -585,7 +599,7 @@ public class OmniFac implements EveryFrameScript
         int fp, size, daysOffset;
         boolean warnedLimit = false, isAnalyzed = false;
 
-        public ShipData(FleetMemberAPI ship, OmniFac factory)
+        ShipData(FleetMemberAPI ship, OmniFac factory)
         {
             fac = factory;
             id = parseHullName(ship);
@@ -625,13 +639,13 @@ public class OmniFac implements EveryFrameScript
         public int getDaysToAnalyze()
         {
             return (int) Math.max(1f,
-                    getDaysToCreate() * fac.settings.SHIP_ANALYSIS_TIME_MOD);
+                    getDaysToCreate() * fac.settings.getShipAnalysisTimeMod());
         }
 
         @Override
         public int getDaysToCreate()
         {
-            return (int) Math.max(((fp * size) / 2f) * fac.settings.SHIP_PRODUCTION_TIME_MOD,
+            return (int) Math.max(((fp * size) / 2f) * fac.settings.getShipProductionTimeMod(),
                     size * 3f);
         }
 
@@ -675,15 +689,15 @@ public class OmniFac implements EveryFrameScript
             switch (size)
             {
                 case 1:
-                    return fac.settings.MAX_HULLS_PER_FIGHTER;
+                    return fac.settings.getMaxHullsPerFighter();
                 case 2:
-                    return fac.settings.MAX_HULLS_PER_FRIGATE;
+                    return fac.settings.getMaxHullsPerFrigate();
                 case 3:
-                    return fac.settings.MAX_HULLS_PER_DESTROYER;
+                    return fac.settings.getMaxHullsPerDestroyer();
                 case 4:
-                    return fac.settings.MAX_HULLS_PER_CRUISER;
+                    return fac.settings.getMaxHullsPerCruiser();
                 case 5:
-                    return fac.settings.MAX_HULLS_PER_CAPITAL;
+                    return fac.settings.getMaxHullsPerCapital();
                 default:
                     return 0;
             }
@@ -738,7 +752,7 @@ public class OmniFac implements EveryFrameScript
         }
     }
 
-    private static final class WeaponData implements BaseData
+    private static class WeaponData implements BaseData
     {
         OmniFac fac;
         String id, displayName;
@@ -746,7 +760,7 @@ public class OmniFac implements EveryFrameScript
         int daysOffset, stackSize;
         boolean warnedLimit = false, isAnalyzed = false;
 
-        public WeaponData(CargoStackAPI stack, OmniFac factory)
+        WeaponData(CargoStackAPI stack, OmniFac factory)
         {
             fac = factory;
             id = (String) stack.getData();
@@ -760,13 +774,13 @@ public class OmniFac implements EveryFrameScript
         public int getDaysToAnalyze()
         {
             return (int) Math.max(1f,
-                    getDaysToCreate() * fac.settings.WEAPON_ANALYSIS_TIME_MOD);
+                    getDaysToCreate() * fac.settings.getWeaponAnalysisTimeMod());
         }
 
         @Override
         public int getDaysToCreate()
         {
-            return (int) Math.max(size * fac.settings.WEAPON_PRODUCTION_TIME_MOD, 1f);
+            return (int) Math.max(size * fac.settings.getWeaponProductionTimeMod(), 1f);
         }
 
         @Override
@@ -796,7 +810,7 @@ public class OmniFac implements EveryFrameScript
         @Override
         public int getLimit()
         {
-            return (int) (stackSize * fac.settings.MAX_STACKS_PER_WEAPON);
+            return (int) (stackSize * fac.settings.getMaxStacksPerWeapon());
         }
 
         @Override

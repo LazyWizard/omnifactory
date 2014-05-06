@@ -1,5 +1,6 @@
- Version 1.9 (not soon)
-========================
+ Version 1.9 (soon)
+====================
+Settings are reloaded every session instead of permanently stored in savefile
 The Omnifactory now removes weapons from ships before it consumes them
 Ship names have proper capitalization now
 

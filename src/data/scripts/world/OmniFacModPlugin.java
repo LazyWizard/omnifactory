@@ -4,7 +4,6 @@ import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
-import data.scripts.world.OmniFac;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,7 @@ public class OmniFacModPlugin extends BaseModPlugin
     // If you wish to modify a default, uncomment and change the relevent line
     private static void initStation(SectorEntityToken station, StarSystemAPI system)
     {
-        OmniFac factory = new OmniFac(station);
+        OmniFac factory = new OmniFac(station, "data/config/omnifac_settings.json");
 
         // Should the player be able to freely take goods from the factory?
         //station.getCargo().setFreeTransfer(false);
@@ -71,7 +70,6 @@ public class OmniFacModPlugin extends BaseModPlugin
         // Sets how many stacks of each weapon to produce. Defaults to 0.5.
         //factory.setMaxStacksPerWeapon(0.5f);
 
-        factory.loadSettingsFromJSON("data/config/omnifac_settings.json");
         system.addScript(factory);
     }
 

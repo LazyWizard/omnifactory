@@ -1,3 +1,12 @@
+ Version 1.9 (not soon)
+========================
+The Omnifactory now removes weapons from ships before it consumes them
+Ship names have proper capitalization now
+
+ Version 1.8b (October 5, 2013)
+================================
+Omnifactory is now player-owned (fixes free transfer bug, requires new game)
+
  Version 1.8 (September 26, 2013)
 ==================================
 (this version is not save compatible with earlier versions)

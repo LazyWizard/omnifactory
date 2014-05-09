@@ -9,13 +9,13 @@ import java.util.List;
 
 public class OmniFacModPlugin extends BaseModPlugin
 {
-    private static final String OMNIFAC_SETTINGS_FILE = "data/config/omnifac_settings.json";
+    public static final String DEFAULT_SETTINGS_FILE = "data/config/omnifac_settings.json";
     private static final String STATION_NAME = "Omnifactory";
     private static final String STATION_FACTION = "player";
 
     private static void initStation(SectorEntityToken station, StarSystemAPI system)
     {
-        OmniFac factory = new OmniFac(station, OMNIFAC_SETTINGS_FILE);
+        OmniFac factory = new OmniFac(station, DEFAULT_SETTINGS_FILE);
         system.addScript(factory);
     }
 

@@ -39,8 +39,13 @@ public class OmniFac implements EveryFrameScript
     {
         this.station = station;
         lastHeartbeat = Global.getSector().getClock().getTimestamp();
-        reloadSettings(settingsFile);
+        setSettingsFile(settingsFile);
         getFactoryMap().put(station, this);
+    }
+
+    public OmniFac(SectorEntityToken station)
+    {
+        this(station, OmniFacModPlugin.DEFAULT_SETTINGS_FILE);
     }
 
     public Object readResolve()
@@ -50,7 +55,7 @@ public class OmniFac implements EveryFrameScript
             settingsFile = "data/config/omnifac_settings.json";
         }
 
-        reloadSettings(settingsFile);
+        setSettingsFile(settingsFile);
         return this;
     }
     //</editor-fold>
@@ -104,7 +109,12 @@ public class OmniFac implements EveryFrameScript
         return settings;
     }
 
-    public void reloadSettings(String settingsFile)
+    public String getSettingsFile()
+    {
+        return settingsFile;
+    }
+
+    public void setSettingsFile(String settingsFile)
     {
         try
         {
@@ -128,34 +138,34 @@ public class OmniFac implements EveryFrameScript
                 "Loaded settings successfully");
     }
 
-    public boolean addRestrictedShip(String hullId)
+    public void addRestrictedShip(String hullId)
     {
         if (hullId.endsWith("_Hull"))
         {
             hullId = hullId.substring(0, hullId.lastIndexOf("_Hull"));
         }
 
-        return (restrictedShips.put(hullId, false) != null);
+        restrictedShips.put(hullId, false);
     }
 
-    public boolean addRestrictedWeapon(String weaponId)
+    public void addRestrictedWeapon(String weaponId)
     {
-        return (restrictedWeps.put(weaponId, false) != null);
+        restrictedWeps.put(weaponId, false);
     }
 
-    public boolean removeRestrictedShip(String hullId)
+    public void removeRestrictedShip(String hullId)
     {
         if (hullId.endsWith("_Hull"))
         {
             hullId = hullId.substring(0, hullId.lastIndexOf("_Hull"));
         }
 
-        return (restrictedShips.remove(hullId) != null);
+        restrictedShips.remove(hullId);
     }
 
-    public boolean removeRestrictedWeapon(String weaponId)
+    public void removeRestrictedWeapon(String weaponId)
     {
-        return (restrictedWeps.remove(weaponId) != null);
+        restrictedWeps.remove(weaponId);
     }
     //</editor-fold>
 

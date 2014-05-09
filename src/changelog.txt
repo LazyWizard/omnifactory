@@ -1,8 +1,36 @@
- Version 1.9 (soon)
-====================
-Settings are reloaded every session instead of permanently stored in savefile
+ Version 1.9 (May 9, 2014)
+===========================
+Many changes to the mod's code, but it should be backwards-compatible with 1.8b
+New methods in OmniFac:
+ - New constructor: OmniFac(SectorEntityToken station, String settingsFile)
+ - OmniFacSettings getSettings()
+ - String getSettingsFile()
+ - setSettingsFile(String settingsFile)
+New class OmniFacSettings:
+ - boolean shouldShowAddedCargo()
+ - boolean shouldShowAnalysisComplete()
+ - boolean shouldShowLimitReached()
+ - boolean shouldRemoveBrokenGoods()
+ - float getShipAnalysisTimeMod()
+ - float getWeaponAnalysisTimeMod()
+ - float getShipProductionTimeMod()
+ - float getWeaponProductionTimeMod()
+ - int getRequiredCrew()
+ - float getRequiredSuppliesPerDay()
+ - float getRequiredFuelPerDay()
+ - int getMaxHullsPerFighter()
+ - int getMaxHullsPerFrigate()
+ - int getMaxHullsPerDestroyer()
+ - int getMaxHullsPerCruiser()
+ - int getMaxHullsPerCapital()
+ - float getMaxStacksPerWeapon()
+Settings are reloaded from JSON every session instead of stored in the savefile
+ (this also means individual settings cannot be changed through code anymore,
+ and must be set as a whole using setSettingsFile() and another settings JSON)
+Removed all other settings-related methods in OmniFac, with the exception of
+ adding/removing restricted ships and weapons
 The Omnifactory now removes weapons from ships before it consumes them
-Ship names have proper capitalization now
+Fixed the Omnifactory and fighter wing names being displayed incorrectly
 
  Version 1.8b (October 5, 2013)
 ================================

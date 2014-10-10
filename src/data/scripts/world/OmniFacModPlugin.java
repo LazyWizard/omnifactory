@@ -1,15 +1,16 @@
 package data.scripts.world;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
-import java.util.ArrayList;
-import java.util.List;
 
 public class OmniFacModPlugin extends BaseModPlugin
 {
     public static final String DEFAULT_SETTINGS_FILE = "data/config/omnifac_settings.json";
+    private static final String STATION_ID = "omnifac";
     private static final String STATION_NAME = "Omnifactory";
     private static final String STATION_FACTION = "player";
 
@@ -35,9 +36,9 @@ public class OmniFacModPlugin extends BaseModPlugin
             // We are in the Corvus system (not a TC), so use Corvus IV
             if ("Corvus Star System".equals(system.getName()))
             {
-                station = system.addOrbitalStation(
-                        system.getEntityByName("Corvus IV"), 315,
-                        300, 50, STATION_NAME, STATION_FACTION);
+                station = system.addOrbitalStation(STATION_ID,
+                        system.getEntityByName("Corvus IV"), 315f,
+                        300f, 50f, STATION_NAME, STATION_FACTION);
             }
             // Not in Corvus, find a good candidate for station placement
             else
@@ -63,9 +64,9 @@ public class OmniFacModPlugin extends BaseModPlugin
                 // Are there any free planets?
                 if (!planets.isEmpty())
                 {
-                    station = system.addOrbitalStation(
-                            (SectorEntityToken) planets.get(0), 315,
-                            300, 50, STATION_NAME, STATION_FACTION);
+                    station = system.addOrbitalStation(STATION_ID,
+                            (SectorEntityToken) planets.get(0), 315f,
+                            300f, 50f, STATION_NAME, STATION_FACTION);
                 }
                 else
                 {
@@ -74,22 +75,22 @@ public class OmniFacModPlugin extends BaseModPlugin
                     // Does the Abandoned Storage Facility exist?
                     if (tmp != null)
                     {
-                        station = system.addOrbitalStation(tmp.getOrbit().getFocus(),
-                                315, 300, 50, STATION_NAME, STATION_FACTION);
+                        station = system.addOrbitalStation(STATION_ID, tmp.getOrbit().getFocus(),
+                                315f, 300f, 50f, STATION_NAME, STATION_FACTION);
                     }
                     else
                     {
                         // I give up, just use the star
                         if (system.getStar() != null)
                         {
-                            station = system.addOrbitalStation(system.getStar(), 315,
-                                    7250, 50, STATION_NAME, STATION_FACTION);
+                            station = system.addOrbitalStation(STATION_ID, system.getStar(), 315f,
+                                    7250f, 50f, STATION_NAME, STATION_FACTION);
                         }
                         // Just in case somehow there's no sun in this system
                         else
                         {
-                            station = system.addOrbitalStation(system.createToken(0f, 0f),
-                                    0, 0, 50, STATION_NAME, STATION_FACTION);
+                            station = system.addOrbitalStation(STATION_ID, system.createToken(0f, 0f),
+                                    0f, 0f, 50f, STATION_NAME, STATION_FACTION);
                         }
                     }
                 }

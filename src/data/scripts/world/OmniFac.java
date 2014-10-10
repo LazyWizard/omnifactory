@@ -52,7 +52,7 @@ public class OmniFac implements EveryFrameScript
     {
         if (settingsFile == null)
         {
-            settingsFile = "data/config/omnifac_settings.json";
+            settingsFile = OmniFacModPlugin.DEFAULT_SETTINGS_FILE;
         }
 
         setSettingsFile(settingsFile);

@@ -1,4 +1,4 @@
-package data.scripts.world;
+package org.lazywizard.omnifac;
 
 import com.fs.starfarer.api.PluginPick;
 import com.fs.starfarer.api.campaign.BaseCampaignPlugin;

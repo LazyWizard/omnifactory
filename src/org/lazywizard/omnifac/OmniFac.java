@@ -1,5 +1,11 @@
 package org.lazywizard.omnifac;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignClockAPI;
@@ -8,21 +14,16 @@ import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.log4j.Level;
 import org.json.JSONException;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
-@SuppressWarnings("unchecked")
+// TODO: Make settings global
+// TODO: Make restricted goods/ships loaded from merged CSV
+// TODO: Split intake and output into two separate submarkets, intake doesn't pay player
 public class OmniFac implements EveryFrameScript
 {
-    private static final String FACTORY_DATA_ID = "lw_omnifac_allfactories";
     private String settingsFile;
     private transient OmniFacSettings settings;
     private final Map<String, ShipData> shipData = new HashMap<>();
@@ -34,7 +35,7 @@ public class OmniFac implements EveryFrameScript
     private int numHeartbeats = 0;
     private boolean warnedRequirements = true;
 
-    //<editor-fold defaultstate="collapsed" desc="Constructor">
+    //<editor-fold desc="Constructor">
     public OmniFac(SectorEntityToken station, String settingsFile)
     {
         this.station = station;
@@ -45,14 +46,14 @@ public class OmniFac implements EveryFrameScript
 
     public OmniFac(SectorEntityToken station)
     {
-        this(station, OmniFacModPlugin.DEFAULT_SETTINGS_FILE);
+        this(station, Constants.SETTINGS_FILE);
     }
 
     public Object readResolve()
     {
         if (settingsFile == null)
         {
-            settingsFile = OmniFacModPlugin.DEFAULT_SETTINGS_FILE;
+            settingsFile = Constants.SETTINGS_FILE;
         }
 
         setSettingsFile(settingsFile);
@@ -60,7 +61,7 @@ public class OmniFac implements EveryFrameScript
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="Static methods">
+    //<editor-fold desc="Static methods">
     public static boolean isFactory(SectorEntityToken station)
     {
         return getFactoryMap().keySet().contains(station);
@@ -75,13 +76,13 @@ public class OmniFac implements EveryFrameScript
     {
         Map<SectorEntityToken, OmniFac> allFactories
                 = (Map<SectorEntityToken, OmniFac>) Global.getSector()
-                .getPersistentData().get(FACTORY_DATA_ID);
+                .getPersistentData().get(Constants.FACTORY_DATA_ID);
 
         if (allFactories == null)
         {
             allFactories = new HashMap<>();
             Global.getSector().getPersistentData()
-                    .put(FACTORY_DATA_ID, allFactories);
+                    .put(Constants.FACTORY_DATA_ID, allFactories);
         }
 
         return allFactories;
@@ -103,7 +104,7 @@ public class OmniFac implements EveryFrameScript
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="Factory settings">
+    //<editor-fold desc="Factory settings">
     public OmniFacSettings getSettings()
     {
         return settings;
@@ -169,7 +170,7 @@ public class OmniFac implements EveryFrameScript
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="Stack/ship analysis">
+    //<editor-fold desc="Stack/ship analysis">
     public boolean isUnknownShip(FleetMemberAPI ship)
     {
         String id = parseHullName(ship);
@@ -194,7 +195,7 @@ public class OmniFac implements EveryFrameScript
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="Heartbeat">
+    //<editor-fold desc="Heartbeat">
     private void heartbeat()
     {
         boolean metRequirements = true;
@@ -573,7 +574,7 @@ public class OmniFac implements EveryFrameScript
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="Internal data types">
+    //<editor-fold desc="Internal data types">
     private static interface BaseData
     {
         public int getDaysToAnalyze();

@@ -1,4 +1,4 @@
-package data.scripts.world;
+package org.lazywizard.omnifac;
 
 import java.util.ArrayList;
 import java.util.List;

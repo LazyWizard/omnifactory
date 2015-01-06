@@ -1,3 +1,10 @@
+ Version 1.9b (January 3, 2015)
+================================
+(this version is not save compatible with earlier versions)
+Compatibility fix for new economy/market systems
+You must pay 50% base value to add ships/weapons to the Omnifactory
+Price of produced ships/weapons is now 150% of the base price
+
  Version 1.9 (May 9, 2014)
 ===========================
 Many changes to the mod's code, but it should be backwards-compatible with 1.8b

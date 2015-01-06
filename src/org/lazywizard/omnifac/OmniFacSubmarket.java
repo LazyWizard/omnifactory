@@ -54,7 +54,7 @@ public class OmniFacSubmarket extends StoragePlugin
     @Override
     public float getTariff()
     {
-        return 1.5f;
+        return OmniFacSettings.getTariff();
     }
 
     @Override

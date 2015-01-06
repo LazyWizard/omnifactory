@@ -38,7 +38,7 @@ public class OmniFacModPlugin extends BaseModPlugin
         station.setMarket(market);
 
         // Add the Omnifactory controller script to the station
-        OmniFac factory = new OmniFac(station, Constants.SETTINGS_FILE);
+        OmniFac factory = new OmniFac(station);
         system.addScript(factory);
     }
 

@@ -21,9 +21,7 @@ import org.lazywizard.lazylib.campaign.MessageUtils;
 
 // TODO: Make settings global instead of per-factory
 // TODO: Make restricted goods/ships loaded from merged CSV
-// TODO: Split intake and output into two separate submarkets, intake doesn't pay player
 // TODO: Switch to one transient script that runs all factories
-// TODO: Change how goods spawn timer is implemented (heartbeat offset is problematic)
 public class OmniFac implements EveryFrameScript
 {
     private String settingsFile;
@@ -194,7 +192,7 @@ public class OmniFac implements EveryFrameScript
 
     public boolean isRestrictedWeapon(CargoStackAPI stack)
     {
-        return restrictedWeps.containsKey((String) stack.getData());
+        return restrictedWeps.containsKey(stack.getData());
     }
     //</editor-fold>
 
@@ -272,7 +270,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!tmp.isAnalyzed())
             {
-                if (numHeartbeats % tmp.getDaysToAnalyze() == tmp.getDaysOffset())
+                if (numHeartbeats - tmp.getDaysToAnalyze() >= tmp.getLastUpdate())
                 {
                     tmp.setAnalyzed(true);
 
@@ -285,7 +283,7 @@ public class OmniFac implements EveryFrameScript
             }
             else
             {
-                if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
+                if (numHeartbeats - tmp.getDaysToCreate() >= tmp.getLastUpdate())
                 {
                     try
                     {
@@ -325,7 +323,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!tmp.isAnalyzed())
             {
-                if (numHeartbeats % tmp.getDaysToAnalyze() == tmp.getDaysOffset())
+                if (numHeartbeats - tmp.getDaysToAnalyze() >= tmp.getLastUpdate())
                 {
                     tmp.setAnalyzed(true);
 
@@ -338,7 +336,7 @@ public class OmniFac implements EveryFrameScript
             }
             else
             {
-                if (numHeartbeats % tmp.getDaysToCreate() == tmp.getDaysOffset())
+                if (numHeartbeats - tmp.getDaysToCreate() >= tmp.getLastUpdate())
                 {
                     try
                     {
@@ -448,12 +446,12 @@ public class OmniFac implements EveryFrameScript
                 {
                     tmp.setAnalyzed(true);
                     newShips.add(tmp.getName() + " ("
-                            + tmp.getDaysToAnalyze() + "d)");
+                            + tmp.getDaysToCreate() + "d)");
                 }
                 else
                 {
                     newShips.add(tmp.getName() + " ("
-                            + tmp.getDaysToCreate() + "d)");
+                            + tmp.getDaysToAnalyze() + "d)");
                 }
 
                 shipData.put(id, tmp);
@@ -475,7 +473,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (isRestrictedWeapon(stack))
             {
-                if (!restrictedWeps.get((String) stack.getData()))
+                if (!restrictedWeps.get(stack.getData()))
                 {
                     blockedWeps.add(stack.getDisplayName());
                     restrictedWeps.put((String) stack.getData(), true);
@@ -490,12 +488,12 @@ public class OmniFac implements EveryFrameScript
                 {
                     tmp.setAnalyzed(true);
                     newWeps.add(tmp.getName() + " ("
-                            + tmp.getDaysToAnalyze() + "d)");
+                            + tmp.getDaysToCreate() + "d)");
                 }
                 else
                 {
                     newWeps.add(tmp.getName() + " ("
-                            + tmp.getDaysToCreate() + "d)");
+                            + tmp.getDaysToAnalyze() + "d)");
                 }
 
                 wepData.put((String) stack.getData(), tmp);
@@ -595,7 +593,7 @@ public class OmniFac implements EveryFrameScript
 
         public int getDaysToCreate();
 
-        public int getDaysOffset();
+        public int getLastUpdate();
 
         public String getName();
 
@@ -621,7 +619,7 @@ public class OmniFac implements EveryFrameScript
         OmniFac fac;
         String id, displayName;
         FleetMemberType type;
-        int fp, size, daysOffset;
+        int fp, size, lastUpdate;
         boolean warnedLimit = false, isAnalyzed = false;
 
         ShipData(FleetMemberAPI ship, OmniFac factory)
@@ -657,7 +655,7 @@ public class OmniFac implements EveryFrameScript
                 //displayName += " capital";
             }
 
-            daysOffset = fac.numHeartbeats % getDaysToAnalyze();
+            lastUpdate = fac.numHeartbeats;
         }
 
         @Override
@@ -675,9 +673,9 @@ public class OmniFac implements EveryFrameScript
         }
 
         @Override
-        public int getDaysOffset()
+        public int getLastUpdate()
         {
-            return daysOffset;
+            return lastUpdate;
         }
 
         @Override
@@ -750,23 +748,16 @@ public class OmniFac implements EveryFrameScript
         public void setAnalyzed(boolean isAnalyzed)
         {
             this.isAnalyzed = isAnalyzed;
-
-            if (isAnalyzed)
-            {
-                daysOffset = fac.numHeartbeats % getDaysToCreate();
-            }
-            else
-            {
-                daysOffset = fac.numHeartbeats % getDaysToAnalyze();
-            }
+            lastUpdate = fac.numHeartbeats;
         }
 
         @Override
         public boolean create()
         {
+            lastUpdate = fac.numHeartbeats;
+
             if (getTotal() >= getLimit())
             {
-                daysOffset = fac.numHeartbeats % getDaysToCreate();
                 return false;
             }
 
@@ -782,7 +773,7 @@ public class OmniFac implements EveryFrameScript
         OmniFac fac;
         String id, displayName;
         float size;
-        int daysOffset, stackSize;
+        int lastUpdate, stackSize;
         boolean warnedLimit = false, isAnalyzed = false;
 
         WeaponData(CargoStackAPI stack, OmniFac factory)
@@ -792,7 +783,7 @@ public class OmniFac implements EveryFrameScript
             displayName = stack.getDisplayName();
             size = stack.getCargoSpacePerUnit();
             stackSize = (int) stack.getMaxSize();
-            daysOffset = fac.numHeartbeats % getDaysToAnalyze();
+            lastUpdate = fac.numHeartbeats;
         }
 
         @Override
@@ -809,9 +800,9 @@ public class OmniFac implements EveryFrameScript
         }
 
         @Override
-        public int getDaysOffset()
+        public int getLastUpdate()
         {
-            return daysOffset;
+            return lastUpdate;
         }
 
         @Override
@@ -860,23 +851,16 @@ public class OmniFac implements EveryFrameScript
         public void setAnalyzed(boolean isAnalyzed)
         {
             this.isAnalyzed = isAnalyzed;
-
-            if (isAnalyzed)
-            {
-                daysOffset = fac.numHeartbeats % getDaysToCreate();
-            }
-            else
-            {
-                daysOffset = fac.numHeartbeats % getDaysToAnalyze();
-            }
+            lastUpdate = fac.numHeartbeats;
         }
 
         @Override
         public boolean create()
         {
+            lastUpdate = fac.numHeartbeats;
+
             if (getTotal() >= getLimit())
             {
-                daysOffset = fac.numHeartbeats % getDaysToCreate();
                 return false;
             }
 

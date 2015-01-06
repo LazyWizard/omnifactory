@@ -10,7 +10,7 @@ import org.json.JSONObject;
 
 public class OmniFacSettings
 {
-    private static Set<String> restrictedGoods;
+    private static Set<String> restrictedWeapons;
     private static Set<String> restrictedShips;
     private static boolean showAddedCargo;
     private static boolean showAnalysisComplete;
@@ -29,7 +29,7 @@ public class OmniFacSettings
     private static int maxHullsPerCruiser;
     private static int maxHullsPerCapital;
     private static float maxStacksPerWeapon;
-    private static float tariff;
+    private static float omnifactoryTariff;
 
     public static void reloadSettings() throws JSONException, IOException
     {
@@ -52,16 +52,16 @@ public class OmniFacSettings
         maxHullsPerCruiser = settings.getInt("maxHullsPerCruiser");
         maxHullsPerCapital = settings.getInt("maxHullsPerCapital");
         maxStacksPerWeapon = (float) settings.getDouble("maxStacksPerWeapon");
-        tariff = (float) settings.getDouble("omnifactoryTariff");
+        omnifactoryTariff = (float) settings.getDouble("omnifactoryTariff");
 
         // Restricted goods
-        JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod("resource id",
-                Constants.RESTRICTED_GOODS_CSV, Constants.MOD_ID);
-        restrictedGoods = new HashSet<>();
+        JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod("weapon id",
+                Constants.RESTRICTED_WEAPONS_CSV, Constants.MOD_ID);
+        restrictedWeapons = new HashSet<>();
         for (int x = 0; x < csv.length(); x++)
         {
             JSONObject row = csv.getJSONObject(x);
-            restrictedGoods.add(row.getString("resource id"));
+            restrictedWeapons.add(row.getString("weapon id"));
         }
 
         // Restricted ships
@@ -75,9 +75,9 @@ public class OmniFacSettings
         }
     }
 
-    public static Set<String> getRestrictedGoods()
+    public static Set<String> getRestrictedWeapons()
     {
-        return restrictedGoods;
+        return restrictedWeapons;
     }
 
     public static Set<String> getRestrictedShips()
@@ -170,9 +170,9 @@ public class OmniFacSettings
         return maxStacksPerWeapon;
     }
 
-    public static float getTariff()
+    public static float getOmnifactoryTariff()
     {
-        return tariff;
+        return omnifactoryTariff;
     }
 
     private OmniFacSettings()

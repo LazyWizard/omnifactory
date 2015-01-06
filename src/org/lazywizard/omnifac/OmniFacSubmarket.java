@@ -30,7 +30,7 @@ public class OmniFacSubmarket extends StoragePlugin
     @Override
     public String getSellVerb()
     {
-        return "Leave";
+        return (getTariff() < 1f ? "Sell" : "Leave");
     }
 
     @Override
@@ -54,7 +54,7 @@ public class OmniFacSubmarket extends StoragePlugin
     @Override
     public float getTariff()
     {
-        return OmniFacSettings.getTariff();
+        return OmniFacSettings.getOmnifactoryTariff();
     }
 
     @Override

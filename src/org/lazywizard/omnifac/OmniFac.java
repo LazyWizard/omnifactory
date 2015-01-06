@@ -2,6 +2,7 @@ package org.lazywizard.omnifac;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,13 @@ public class OmniFac implements EveryFrameScript
     public OmniFac(SectorEntityToken station)
     {
         this.station = station;
-        lastHeartbeat = Global.getSector().getClock().getTimestamp();
+
+        // Synchronize factory heartbeat with beginning of the day
+        final CampaignClockAPI clock = Global.getSector().getClock();
+        final GregorianCalendar cal = new GregorianCalendar(
+                clock.getCycle(), clock.getMonth() - 1, clock.getDay());
+        lastHeartbeat = cal.getTimeInMillis();
+
         getFactoryMap().put(station, this);
     }
     //</editor-fold>
@@ -65,7 +72,7 @@ public class OmniFac implements EveryFrameScript
 
     public static List<SectorEntityToken> getFactories()
     {
-        return new ArrayList(getFactoryMap().keySet());
+        return new ArrayList<>(getFactoryMap().keySet());
     }
 
     public static String parseHullName(FleetMemberAPI ship)
@@ -82,15 +89,13 @@ public class OmniFac implements EveryFrameScript
     //<editor-fold desc="Stack/ship analysis">
     public boolean isUnknownShip(FleetMemberAPI ship)
     {
-        String id = parseHullName(ship);
-        return !shipData.containsKey(id);
+        return !shipData.containsKey(parseHullName(ship));
     }
 
     public boolean isUnknownWeapon(CargoStackAPI stack)
     {
         // We only deal with weapons, not resources
-        String id = (String) stack.getData();
-        return (stack.isWeaponStack() && !wepData.containsKey(id));
+        return (stack.isWeaponStack() && !wepData.containsKey(stack.getData()));
     }
 
     public boolean isRestrictedShip(FleetMemberAPI ship)
@@ -100,7 +105,7 @@ public class OmniFac implements EveryFrameScript
 
     public boolean isRestrictedWeapon(CargoStackAPI stack)
     {
-        return OmniFacSettings.getRestrictedGoods().contains(stack.getData());
+        return OmniFacSettings.getRestrictedWeapons().contains(stack.getData());
     }
     //</editor-fold>
 
@@ -125,7 +130,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!warnedRequirements)
             {
-                Global.getSector().addMessage("The " + station.getName()
+                Global.getSector().getCampaignUI().addMessage("The " + station.getName()
                         + " needs " + (OmniFacSettings.getRequiredCrew() - cargo.getTotalCrew())
                         + " more crew to function.");
             }
@@ -137,7 +142,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!warnedRequirements)
             {
-                Global.getSector().addMessage("The " + station.getName()
+                Global.getSector().getCampaignUI().addMessage("The " + station.getName()
                         + " is out of fuel. It requires " + OmniFacSettings.getRequiredFuelPerDay()
                         + " per day to function.");
             }
@@ -149,7 +154,7 @@ public class OmniFac implements EveryFrameScript
         {
             if (!warnedRequirements)
             {
-                Global.getSector().addMessage("The " + station.getName()
+                Global.getSector().getCampaignUI().addMessage("The " + station.getName()
                         + " is out of supplies. It requires " + OmniFacSettings.getRequiredSuppliesPerDay()
                         + " per day to function.");
             }
@@ -168,11 +173,11 @@ public class OmniFac implements EveryFrameScript
         cargo.removeFuel(OmniFacSettings.getRequiredFuelPerDay());
         numHeartbeats++;
 
-        List<String> addedShips = new ArrayList();
-        List<String> addedWeps = new ArrayList();
-        List<String> analyzedShips = new ArrayList();
-        List<String> analyzedWeps = new ArrayList();
-        List<String> hitLimit = new ArrayList();
+        List<String> addedShips = new ArrayList<>();
+        List<String> addedWeps = new ArrayList<>();
+        List<String> analyzedShips = new ArrayList<>();
+        List<String> analyzedWeps = new ArrayList<>();
+        List<String> hitLimit = new ArrayList<>();
 
         for (BaseData tmp : shipData.values())
         {
@@ -211,14 +216,14 @@ public class OmniFac implements EveryFrameScript
                     }
                     catch (RuntimeException ex)
                     {
-                        Global.getSector().addMessage("Failed to create ship '"
-                                + tmp.getName() + "' (" + tmp.getId()
-                                + ")! Was a required mod disabled?");
+                        Global.getSector().getCampaignUI().addMessage(
+                                "Failed to create ship '" + tmp.getName() + "' ("
+                                + tmp.getId() + ")! Was a required mod disabled?");
 
                         if (OmniFacSettings.shouldRemoveBrokenGoods())
                         {
-                            Global.getSector().addMessage("Removed ship '"
-                                    + tmp.getName() + "' from "
+                            Global.getSector().getCampaignUI().addMessage(
+                                    "Removed ship '" + tmp.getName() + "' from "
                                     + station.getName() + "'s memory banks.");
                             shipData.remove(tmp.getId());
                         }
@@ -264,14 +269,14 @@ public class OmniFac implements EveryFrameScript
                     }
                     catch (RuntimeException ex)
                     {
-                        Global.getSector().addMessage("Failed to create weapon '"
-                                + tmp.getName() + "' (" + tmp.getId()
-                                + ")! Was a required mod disabled?");
+                        Global.getSector().getCampaignUI().addMessage(
+                                "Failed to create weapon '" + tmp.getName() + "' ("
+                                + tmp.getId() + ")! Was a required mod disabled?");
 
                         if (OmniFacSettings.shouldRemoveBrokenGoods())
                         {
-                            Global.getSector().addMessage("Removed weapon '"
-                                    + tmp.getName() + "' from "
+                            Global.getSector().getCampaignUI().addMessage(
+                                    "Removed weapon '" + tmp.getName() + "' from "
                                     + station.getName() + "'s memory banks.");
                             wepData.remove(tmp.getId());
                         }
@@ -329,10 +334,10 @@ public class OmniFac implements EveryFrameScript
     {
         boolean newItem = false;
         CargoAPI cargo = getCargo();
-        List<String> newShips = new ArrayList();
-        List<String> blockedShips = new ArrayList();
-        List<String> newWeps = new ArrayList();
-        List<String> blockedWeps = new ArrayList();
+        List<String> newShips = new ArrayList<>();
+        List<String> blockedShips = new ArrayList<>();
+        List<String> newWeps = new ArrayList<>();
+        List<String> blockedWeps = new ArrayList<>();
 
         for (FleetMemberAPI ship : cargo.getMothballedShips().getMembersListCopy())
         {
@@ -529,32 +534,7 @@ public class OmniFac implements EveryFrameScript
             displayName = ship.getHullSpec().getHullName();
             type = ship.getType();
             fp = ship.getFleetPointCost();
-
-            if (ship.isFighterWing())
-            {
-                size = 1;
-            }
-            else if (ship.isFrigate())
-            {
-                size = 2;
-                //displayName += " frigate";
-            }
-            else if (ship.isDestroyer())
-            {
-                size = 3;
-                //displayName += " destroyer";
-            }
-            else if (ship.isCruiser())
-            {
-                size = 4;
-                //displayName += " cruiser";
-            }
-            else
-            {
-                size = 5;
-                //displayName += " capital";
-            }
-
+            size = ship.getHullSpec().getHullSize().ordinal();
             lastUpdate = fac.numHeartbeats;
         }
 

@@ -1,11 +1,20 @@
- Version 1.9b (January 5, 2015)
+ Version 1.10 (January 5, 2015)
 ================================
-(this version is not save compatible with earlier versions)
-Compatibility fix for new economy/market systems
-Fixed bug where wrong numbers were shown for analysis phase duration
-Balance tweaks:
- - You must pay to add ships/weapons to the Omnifactory
- - The price of produced ships/weapons is vastly inflated
+(this version is not save compatible with earlier versions) (duh)
+Compatibility fixes for new economy/market systems
+When added to existing save, syncs factory heartbeat to beginning of next day
+Settings are global, defined in data/config/omnifactory/omnifac_settings.json
+Restricted goods are defined in a CSV, merged so multiple mods can add to list
+Fixed ancient bug where the wrong numbers were shown for analysis phase duration
+Added "omnifactoryTariff" setting, defaults to 100%
+Balance tweaks (mostly due to above default tariff):
+ - You no longer earn a profit when selling to the Omnifactory
+ - The prices of produced ships/weapons are vastly inflated
+ - Resources still cost almost nothing to store (as there's no market demand)
+Added to OmniFacSettings:
+ - Set<String> getRestrictedWeapons()
+ - Set<String> getRestrictedShips()
+ - float getOmnifactoryTariff()
 
  Version 1.9 (May 9, 2014)
 ===========================

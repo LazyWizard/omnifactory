@@ -7,4 +7,5 @@ class Constants
     static final String STATION_ID = "omnifac";
     static final String STATION_NAME = "Omnifactory";
     static final String STATION_FACTION = "player";
+    static final String SUBMARKET_ID = "omnifac_market";
 }

@@ -19,9 +19,11 @@ import org.json.JSONException;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
-// TODO: Make settings global
+// TODO: Make settings global instead of per-factory
 // TODO: Make restricted goods/ships loaded from merged CSV
 // TODO: Split intake and output into two separate submarkets, intake doesn't pay player
+// TODO: Switch to one transient script that runs all factories
+// TODO: Change how goods spawn timer is implemented (heartbeat offset is problematic)
 public class OmniFac implements EveryFrameScript
 {
     private String settingsFile;
@@ -31,6 +33,7 @@ public class OmniFac implements EveryFrameScript
     private final Map<String, Boolean> restrictedShips = new HashMap<>();
     private final Map<String, Boolean> restrictedWeps = new HashMap<>();
     private final SectorEntityToken station;
+    private transient CargoAPI cargo;
     private long lastHeartbeat;
     private int numHeartbeats = 0;
     private boolean warnedRequirements = true;
@@ -196,10 +199,21 @@ public class OmniFac implements EveryFrameScript
     //</editor-fold>
 
     //<editor-fold desc="Heartbeat">
+    public CargoAPI getCargo()
+    {
+        if (cargo == null)
+        {
+            cargo = station.getMarket().getSubmarket(
+                    Constants.SUBMARKET_ID).getCargo();
+        }
+
+        return cargo;
+    }
+
     private void heartbeat()
     {
         boolean metRequirements = true;
-        CargoAPI cargo = station.getCargo();
+        CargoAPI cargo = getCargo();
 
         if (cargo.getTotalCrew() < settings.getRequiredCrew())
         {
@@ -408,7 +422,7 @@ public class OmniFac implements EveryFrameScript
     public boolean checkCargo()
     {
         boolean newItem = false;
-        CargoAPI cargo = station.getCargo();
+        CargoAPI cargo = getCargo();
         List<String> newShips = new ArrayList();
         List<String> blockedShips = new ArrayList();
         List<String> newWeps = new ArrayList();
@@ -683,7 +697,7 @@ public class OmniFac implements EveryFrameScript
         {
             int total = 0;
 
-            for (FleetMemberAPI tmp : fac.station.getCargo().getMothballedShips().getMembersListCopy())
+            for (FleetMemberAPI tmp : fac.getCargo().getMothballedShips().getMembersListCopy())
             {
                 if (id.equals(parseHullName(tmp)))
                 {
@@ -757,7 +771,7 @@ public class OmniFac implements EveryFrameScript
             }
 
             warnedLimit = false;
-            fac.station.getCargo().addMothballedShip(type, id
+            fac.getCargo().addMothballedShip(type, id
                     + (type.equals(FleetMemberType.FIGHTER_WING) ? "" : "_Hull"), null);
             return true;
         }
@@ -815,7 +829,7 @@ public class OmniFac implements EveryFrameScript
         @Override
         public int getTotal()
         {
-            return fac.station.getCargo().getNumWeapons(id);
+            return fac.getCargo().getNumWeapons(id);
         }
 
         @Override
@@ -867,7 +881,7 @@ public class OmniFac implements EveryFrameScript
             }
 
             warnedLimit = false;
-            fac.station.getCargo().addWeapons(id, 1);
+            fac.getCargo().addWeapons(id, 1);
             return true;
         }
     }

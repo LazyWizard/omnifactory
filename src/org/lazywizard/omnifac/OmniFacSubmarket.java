@@ -36,7 +36,7 @@ public class OmniFacSubmarket extends StoragePlugin
     @Override
     public String getBuyVerb()
     {
-        return (getTariff() > 0f ? "Buy" : "Take");
+        return (getTariff() > -1f ? "Buy" : "Take");
     }
 
     @Override

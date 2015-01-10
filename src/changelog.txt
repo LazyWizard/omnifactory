@@ -1,7 +1,15 @@
+ Version 1.10b (January 9, 2015)
+=================================
+You can no longer sell restricted or already known ships/weapons to the factory
+Omnifactory now includes a storage tab, unlocked by default
+Added a description for the Omnifactory submarket
+Buy/sell replaced with appropriate verbs based on tariff setting
+
  Version 1.10 (January 5, 2015)
 ================================
 (this version is not save compatible with earlier versions) (duh)
 Compatibility fixes for new economy/market systems
+Added Version Checker support
 When added to existing save, syncs factory heartbeat to beginning of next day
 Settings are global, defined in data/config/omnifactory/omnifac_settings.json
 Restricted goods are defined in a CSV, merged so multiple mods can add to list

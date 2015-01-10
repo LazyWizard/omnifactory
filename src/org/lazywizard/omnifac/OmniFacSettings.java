@@ -1,6 +1,7 @@
 package org.lazywizard.omnifac;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import com.fs.starfarer.api.Global;
@@ -15,6 +16,7 @@ public class OmniFacSettings
     private static boolean showAddedCargo;
     private static boolean showAnalysisComplete;
     private static boolean showLimitReached;
+    private static boolean allowRestrictedGoods;
     private static boolean removeBrokenGoods;
     private static float shipAnalysisTimeMod;
     private static float weaponAnalysisTimeMod;
@@ -38,6 +40,7 @@ public class OmniFacSettings
         showAddedCargo = settings.getBoolean("showAddedCargo");
         showAnalysisComplete = settings.getBoolean("showAnalysisComplete");
         showLimitReached = settings.getBoolean("showLimitReached");
+        allowRestrictedGoods = settings.getBoolean("ignoreGoodRestrictions");
         removeBrokenGoods = settings.getBoolean("removeBrokenGoods");
         shipAnalysisTimeMod = (float) settings.getDouble("shipAnalysisTimeMod");
         weaponAnalysisTimeMod = (float) settings.getDouble("weaponAnalysisTimeMod");
@@ -77,11 +80,21 @@ public class OmniFacSettings
 
     public static Set<String> getRestrictedWeapons()
     {
+        if (allowRestrictedGoods)
+        {
+            return Collections.<String>emptySet();
+        }
+
         return restrictedWeapons;
     }
 
     public static Set<String> getRestrictedShips()
     {
+        if (allowRestrictedGoods)
+        {
+            return Collections.<String>emptySet();
+        }
+
         return restrictedShips;
     }
 

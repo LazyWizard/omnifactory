@@ -20,7 +20,7 @@ import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
-// TODO: Switch to one transient script that runs all factories
+// TODO: Merge with the submarket plugin after next save-breaking SS update
 public class OmniFac implements EveryFrameScript
 {
     private final Map<String, ShipData> shipData = new HashMap<>();

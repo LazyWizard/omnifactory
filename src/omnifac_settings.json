@@ -2,6 +2,7 @@
     "showAddedCargo":false, # Boolean
     "showAnalysisComplete":true, # Boolean
     "showLimitReached":true, # Boolean
+    "ignoreGoodRestrictions":false, # Boolean
     "removeBrokenGoods":false, # Boolean
     "shipAnalysisTimeMod":0.5, # Double
     "weaponAnalysisTimeMod":0.5, # Double

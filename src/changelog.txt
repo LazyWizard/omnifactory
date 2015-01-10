@@ -1,5 +1,6 @@
  Version 1.10b (January 9, 2015)
 =================================
+Added "ignoreGoodRestrictions" setting, allows replication of restricted goods
 You can no longer sell restricted or already known ships/weapons to the factory
 Omnifactory now includes a storage tab, unlocked by default
 Added a description for the Omnifactory submarket

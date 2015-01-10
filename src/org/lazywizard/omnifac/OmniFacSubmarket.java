@@ -54,13 +54,46 @@ public class OmniFacSubmarket extends StoragePlugin
     @Override
     public boolean isIllegalOnSubmarket(CargoStackAPI stack, TransferAction action)
     {
+        // Can't sell restricted or known weapons to the Omnifactory
+        if (action == TransferAction.PLAYER_SELL)
+        {
+            return (getFactory().isRestrictedWeapon(stack)
+                    || !getFactory().isUnknownWeapon(stack));
+        }
+
         return false;
     }
 
     @Override
     public boolean isIllegalOnSubmarket(FleetMemberAPI member, TransferAction action)
     {
+        // Can't sell restricted or known ships to the Omnifactory
+        if (action == TransferAction.PLAYER_SELL)
+        {
+            return (getFactory().isRestrictedShip(member)
+                    || !getFactory().isUnknownShip(member));
+        }
+
         return false;
+    }
+
+    @Override
+    public String getIllegalTransferText(CargoStackAPI stack, TransferAction action)
+    {
+        if (!stack.isWeaponStack() || getFactory().isRestrictedWeapon(stack))
+        {
+            return "Unable to replicate";
+        }
+
+        return "Blueprint already known";
+    }
+
+    @Override
+    public String getIllegalTransferText(FleetMemberAPI member, TransferAction action)
+    {
+        return (getFactory().isRestrictedShip(member)
+                ? "Unable to replicate"
+                : "Blueprint already known");
     }
 
     @Override

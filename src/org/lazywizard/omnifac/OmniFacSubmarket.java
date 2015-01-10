@@ -8,11 +8,23 @@ import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
 public class OmniFacSubmarket extends StoragePlugin
 {
+    private transient OmniFac fac;
+
     @Override
     public void init(SubmarketAPI submarket)
     {
         super.init(submarket);
         super.setPlayerPaidToUnlock(true);
+    }
+
+    public OmniFac getFactory()
+    {
+        if (fac == null)
+        {
+            fac = OmniFac.getFactory(this.market.getPrimaryEntity());
+        }
+
+        return fac;
     }
 
     @Override
@@ -24,7 +36,7 @@ public class OmniFacSubmarket extends StoragePlugin
     @Override
     public String getBuyVerb()
     {
-        return "Buy";
+        return (getTariff() > 0f ? "Buy" : "Take");
     }
 
     @Override

@@ -12,8 +12,11 @@ import com.fs.starfarer.api.campaign.CampaignClockAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
+import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
+import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
@@ -33,13 +36,27 @@ public class OmniFac implements EveryFrameScript
     {
         this.station = station;
 
-        // Synchronize factory heartbeat with beginning of the day
+        // Synchronize factory heartbeat to the start of the next day
         final CampaignClockAPI clock = Global.getSector().getClock();
-        final GregorianCalendar cal = new GregorianCalendar(
-                clock.getCycle(), clock.getMonth() - 1, clock.getDay());
-        lastHeartbeat = cal.getTimeInMillis();
+        lastHeartbeat = new GregorianCalendar(clock.getCycle(),
+                clock.getMonth() - 1, clock.getDay()).getTimeInMillis();
 
         getFactoryMap().put(station, this);
+    }
+
+    // Backwards compatibility with 1.10 saves
+    // TODO: Remove after next save-breaking Starsector update
+    public Object readResolve()
+    {
+        MarketAPI market = station.getMarket();
+        if (!market.hasSubmarket(Submarkets.SUBMARKET_STORAGE))
+        {
+            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
+            ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
+                    .getPlugin()).setPlayerPaidToUnlock(true);
+        }
+
+        return this;
     }
     //</editor-fold>
 

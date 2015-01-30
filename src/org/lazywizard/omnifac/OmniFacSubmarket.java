@@ -92,8 +92,7 @@ public class OmniFacSubmarket extends StoragePlugin
     public String getIllegalTransferText(FleetMemberAPI member, TransferAction action)
     {
         return (getFactory().isRestrictedShip(member)
-                ? "Unable to replicate"
-                : "Blueprint already known");
+                ? "Unable to replicate" : "Blueprint already known");
     }
 
     @Override

@@ -1,4 +1,5 @@
 {
+    "randomStartingLocation":true, # Boolean
     "showAddedCargo":false, # Boolean
     "showAnalysisComplete":true, # Boolean
     "showLimitReached":true, # Boolean

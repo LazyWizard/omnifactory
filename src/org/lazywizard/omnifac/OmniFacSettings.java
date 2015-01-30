@@ -13,6 +13,7 @@ public class OmniFacSettings
 {
     private static Set<String> restrictedWeapons;
     private static Set<String> restrictedShips;
+    private static boolean randomLocation;
     private static boolean showAddedCargo;
     private static boolean showAnalysisComplete;
     private static boolean showLimitReached;
@@ -37,6 +38,7 @@ public class OmniFacSettings
     {
         // Base Omnifactory settings
         JSONObject settings = Global.getSettings().loadJSON(Constants.SETTINGS_FILE);
+        randomLocation = settings.getBoolean("randomStartingLocation");
         showAddedCargo = settings.getBoolean("showAddedCargo");
         showAnalysisComplete = settings.getBoolean("showAnalysisComplete");
         showLimitReached = settings.getBoolean("showLimitReached");
@@ -96,6 +98,11 @@ public class OmniFacSettings
         }
 
         return restrictedShips;
+    }
+
+    static boolean shouldHaveRandomStartingLocation()
+    {
+        return randomLocation;
     }
 
     public static boolean shouldShowAddedCargo()

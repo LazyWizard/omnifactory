@@ -3,6 +3,7 @@
 Added "randomStartingLocation" setting:
  - With this set to true, the Omnifactory will orbit a random planet or star
    in a random system, so long as that planet doesn't have a station already
+Default sell price is now almost always 0, except with very large transactions
 
  Version 1.10b (January 9, 2015)
 =================================

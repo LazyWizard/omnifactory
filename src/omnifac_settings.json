@@ -18,5 +18,5 @@
     "maxHullsPerCruiser":2, # Integer
     "maxHullsPerCapital":1, # Integer
     "maxStacksPerWeapon":0.5, # Double
-    "omnifactoryTariff":1.0 # Double
+    "omnifactoryTariff":0.999999 # Double
 }

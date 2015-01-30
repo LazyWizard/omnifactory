@@ -24,20 +24,6 @@ import org.lazywizard.lazylib.CollectionUtils.CollectionFilter;
 
 public class OmniFacModPlugin extends BaseModPlugin
 {
-    public static void initOmnifactory(SectorEntityToken factory)
-    {
-        // Only one controller script per factory
-        if (OmniFac.isFactory(factory))
-        {
-            throw new RuntimeException(factory.getFullName()
-                    + " is already an Omnifactory!");
-        }
-
-        // Set up market data for the Omnifactory
-        MarketAPI market = factory.getMarket();
-        market.addSubmarket(Constants.SUBMARKET_ID);
-    }
-
     private static SectorEntityToken createOmnifactory()
     {
         SectorAPI sector = Global.getSector();
@@ -115,6 +101,7 @@ public class OmniFacModPlugin extends BaseModPlugin
     {
         if (!wasEnabledBefore)
         {
+            // Set up the station and its market
             SectorEntityToken factory = createOmnifactory();
             MarketAPI market = Global.getFactory().createMarket(
                     Constants.STATION_ID, Constants.STATION_NAME, 0);
@@ -128,7 +115,9 @@ public class OmniFacModPlugin extends BaseModPlugin
                     .getPlugin()).setPlayerPaidToUnlock(true);
             factory.setMarket(market);
             Global.getSector().getEconomy().addMarket(market);
-            initOmnifactory(factory);
+
+            // Add Omnifactory submarket to station's market
+            OmniFac.initOmnifactory(factory);
         }
     }
 

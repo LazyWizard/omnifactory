@@ -1,6 +1,11 @@
+ Version 1.11 (February XX, 2015)
+==================================
+(this version is not save compatible with earlier versions)
+Rewrote Omnifactory as a submarket plugin
+
  Version 1.10c (January 29, 2015)
 ==================================
-Added "randomStartingLocation" setting:
+Added "randomStartingLocation" setting, enabled by default:
  - With this set to true, the Omnifactory will orbit a random planet or star
    in a random system, so long as that planet doesn't have a station already
 Default sell price is now almost always 0, except with very large transactions

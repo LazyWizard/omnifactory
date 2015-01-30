@@ -34,32 +34,10 @@ public class OmniFacModPlugin extends BaseModPlugin
         }
 
         // Set up market data for the Omnifactory
-        MarketAPI market = Global.getFactory().createMarket(
-                Constants.STATION_ID, Constants.STATION_NAME, 0);
-        SharedData.getData().getMarketsWithoutPatrolSpawn().add(Constants.STATION_ID);
-        SharedData.getData().getMarketsWithoutTradeFleetSpawn().add(Constants.STATION_ID);
-        market.setPrimaryEntity(factory);
-        market.setFactionId(Constants.STATION_FACTION);
-        market.addCondition(Conditions.ABANDONED_STATION);
+        MarketAPI market = factory.getMarket();
         market.addSubmarket(Constants.SUBMARKET_ID);
-        market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
-        ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
-                .getPlugin()).setPlayerPaidToUnlock(true);
-        factory.setMarket(market);
-
-        // Add the Omnifactory controller script
-        OmniFac facScript = new OmniFac(factory);
-        factory.getContainingLocation().addScript(facScript);
     }
 
-    /*public static void testRandomLocations(int numTests)
-     {
-     for (int x = 0; x < numTests; x++)
-     {
-     SectorEntityToken omnifac = createOmnifactory();
-     omnifac.getContainingLocation().removeEntity(omnifac);
-     }
-     }*/
     private static SectorEntityToken createOmnifactory()
     {
         SectorAPI sector = Global.getSector();
@@ -137,7 +115,20 @@ public class OmniFacModPlugin extends BaseModPlugin
     {
         if (!wasEnabledBefore)
         {
-            initOmnifactory(createOmnifactory());
+            SectorEntityToken factory = createOmnifactory();
+            MarketAPI market = Global.getFactory().createMarket(
+                    Constants.STATION_ID, Constants.STATION_NAME, 0);
+            SharedData.getData().getMarketsWithoutPatrolSpawn().add(Constants.STATION_ID);
+            SharedData.getData().getMarketsWithoutTradeFleetSpawn().add(Constants.STATION_ID);
+            market.setPrimaryEntity(factory);
+            market.setFactionId(Constants.STATION_FACTION);
+            market.addCondition(Conditions.ABANDONED_STATION);
+            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
+            ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
+                    .getPlugin()).setPlayerPaidToUnlock(true);
+            factory.setMarket(market);
+            Global.getSector().getEconomy().addMarket(market);
+            initOmnifactory(factory);
         }
     }
 

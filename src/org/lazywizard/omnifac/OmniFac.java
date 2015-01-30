@@ -12,6 +12,7 @@ import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.SubmarketPlugin.TransferAction;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
@@ -34,6 +35,7 @@ public class OmniFac extends StoragePlugin
         super.init(submarket);
         super.setPlayerPaidToUnlock(true);
 
+        // Will be properly set by initOmnifactory(), but here as a fallback
         this.station = submarket.getMarket().getPrimaryEntity();
 
         // Synchronize factory heartbeat to the start of the next day
@@ -43,6 +45,21 @@ public class OmniFac extends StoragePlugin
     }
 
     //<editor-fold desc="Static methods">
+    public static void initOmnifactory(SectorEntityToken factory)
+    {
+        // Only one controller script per factory
+        if (isFactory(factory))
+        {
+            throw new RuntimeException(factory.getFullName()
+                    + " is already an Omnifactory!");
+        }
+
+        // Set up market data for the Omnifactory
+        MarketAPI market = factory.getMarket();
+        market.addSubmarket(Constants.SUBMARKET_ID);
+        getFactory(factory).station = factory;
+    }
+
     public static boolean isFactory(SectorEntityToken station)
     {
         return station.getMarket().hasSubmarket(Constants.SUBMARKET_ID);
@@ -53,13 +70,28 @@ public class OmniFac extends StoragePlugin
         return (OmniFac) station.getMarket().getSubmarket(Constants.SUBMARKET_ID).getPlugin();
     }
 
-    public static String parseHullName(FleetMemberAPI ship)
+    public static List<OmniFac> getAllFactories()
     {
-        return (ship.isFighterWing() ? ship.getSpecId() : ship.getHullId());
+        List<OmniFac> factories = new ArrayList<>();
+        for (MarketAPI market : Global.getSector().getEconomy().getMarketsCopy())
+        {
+            SectorEntityToken token = market.getPrimaryEntity();
+            if (isFactory(token))
+            {
+                factories.add(getFactory(token));
+            }
+        }
+
+        return factories;
     }
     //</editor-fold>
 
     //<editor-fold desc="Stack/ship analysis">
+    private static String parseHullName(FleetMemberAPI ship)
+    {
+        return (ship.isFighterWing() ? ship.getSpecId() : ship.getHullId());
+    }
+
     public boolean isUnknownShip(FleetMemberAPI ship)
     {
         return !shipData.containsKey(parseHullName(ship));
@@ -476,6 +508,7 @@ public class OmniFac extends StoragePlugin
     }
     //</editor-fold>
 
+    //<editor-fold desc="Submarket details">
     @Override
     public String getName()
     {
@@ -552,6 +585,13 @@ public class OmniFac extends StoragePlugin
     {
         return false;
     }
+
+    @Override
+    public boolean isParticipatesInEconomy()
+    {
+        return false;
+    }
+//</editor-fold>
 
     //<editor-fold desc="Internal data types">
     private static interface BaseData

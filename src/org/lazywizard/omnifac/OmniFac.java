@@ -6,100 +6,56 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignClockAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.SubmarketPlugin.TransferAction;
+import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
-import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
-// TODO: Merge with the submarket plugin after next save-breaking SS update
-public class OmniFac implements EveryFrameScript
+public class OmniFac extends StoragePlugin
 {
     private final Map<String, ShipData> shipData = new HashMap<>();
     private final Map<String, WeaponData> wepData = new HashMap<>();
-    private final SectorEntityToken station;
-    private transient CargoAPI cargo;
+    private SectorEntityToken station;
     private long lastHeartbeat;
     private int numHeartbeats = 0;
     private boolean warnedRequirements = true;
 
-    //<editor-fold desc="Constructor">
-    public OmniFac(SectorEntityToken station)
+    @Override
+    public void init(SubmarketAPI submarket)
     {
-        this.station = station;
+        super.init(submarket);
+        super.setPlayerPaidToUnlock(true);
+
+        this.station = submarket.getMarket().getPrimaryEntity();
 
         // Synchronize factory heartbeat to the start of the next day
         final CampaignClockAPI clock = Global.getSector().getClock();
         lastHeartbeat = new GregorianCalendar(clock.getCycle(),
                 clock.getMonth() - 1, clock.getDay()).getTimeInMillis();
-
-        getFactoryMap().put(station, this);
     }
-
-    // Backwards compatibility with 1.10 saves
-    // TODO: Remove after next save-breaking Starsector update
-    public Object readResolve()
-    {
-        MarketAPI market = station.getMarket();
-        if (!market.hasSubmarket(Submarkets.SUBMARKET_STORAGE))
-        {
-            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
-            ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
-                    .getPlugin()).setPlayerPaidToUnlock(true);
-        }
-
-        return this;
-    }
-    //</editor-fold>
 
     //<editor-fold desc="Static methods">
     public static boolean isFactory(SectorEntityToken station)
     {
-        return getFactoryMap().keySet().contains(station);
+        return station.getMarket().hasSubmarket(Constants.SUBMARKET_ID);
     }
 
     public static OmniFac getFactory(SectorEntityToken station)
     {
-        return getFactoryMap().get(station);
-    }
-
-    private static Map<SectorEntityToken, OmniFac> getFactoryMap()
-    {
-        Map<SectorEntityToken, OmniFac> allFactories
-                = (Map<SectorEntityToken, OmniFac>) Global.getSector()
-                .getPersistentData().get(Constants.FACTORY_DATA_ID);
-
-        if (allFactories == null)
-        {
-            allFactories = new HashMap<>();
-            Global.getSector().getPersistentData()
-                    .put(Constants.FACTORY_DATA_ID, allFactories);
-        }
-
-        return allFactories;
-    }
-
-    public static List<SectorEntityToken> getFactories()
-    {
-        return new ArrayList<>(getFactoryMap().keySet());
+        return (OmniFac) station.getMarket().getSubmarket(Constants.SUBMARKET_ID).getPlugin();
     }
 
     public static String parseHullName(FleetMemberAPI ship)
     {
-        if (ship.isFighterWing())
-        {
-            return ship.getSpecId();
-        }
-
-        return ship.getHullId();
+        return (ship.isFighterWing() ? ship.getSpecId() : ship.getHullId());
     }
     //</editor-fold>
 
@@ -124,20 +80,44 @@ public class OmniFac implements EveryFrameScript
     {
         return OmniFacSettings.getRestrictedWeapons().contains(stack.getData());
     }
+
+    public List<String> getKnownShips()
+    {
+        List<String> knownShips = new ArrayList<>(shipData.size());
+
+        for (ShipData data : shipData.values())
+        {
+            if (data.size > 1)
+            {
+                knownShips.add(data.id);
+            }
+        }
+
+        return knownShips;
+    }
+
+    public List<String> getKnownWings()
+    {
+        List<String> knownWings = new ArrayList<>(shipData.size());
+
+        for (ShipData data : shipData.values())
+        {
+            if (data.size == 1)
+            {
+                knownWings.add(data.id);
+            }
+        }
+
+        return knownWings;
+    }
+
+    public List<String> getKnownWeapons()
+    {
+        return new ArrayList<>(wepData.keySet());
+    }
     //</editor-fold>
 
     //<editor-fold desc="Heartbeat">
-    public CargoAPI getCargo()
-    {
-        if (cargo == null)
-        {
-            cargo = station.getMarket().getSubmarket(
-                    Constants.SUBMARKET_ID).getCargo();
-        }
-
-        return cargo;
-    }
-
     private void heartbeat()
     {
         boolean metRequirements = true;
@@ -366,7 +346,7 @@ public class OmniFac implements EveryFrameScript
             {
                 newItem = true;
                 String id = parseHullName(ship);
-                ShipData tmp = new ShipData(ship, this);
+                ShipData tmp = new ShipData(ship);
 
                 if (OmniFacSettings.getShipAnalysisTimeMod() == 0f)
                 {
@@ -404,7 +384,7 @@ public class OmniFac implements EveryFrameScript
             else if (isUnknownWeapon(stack))
             {
                 newItem = true;
-                WeaponData tmp = new WeaponData(stack, this);
+                WeaponData tmp = new WeaponData(stack);
 
                 if (OmniFacSettings.getWeaponAnalysisTimeMod() == 0f)
                 {
@@ -479,18 +459,6 @@ public class OmniFac implements EveryFrameScript
     }
 
     @Override
-    public boolean isDone()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean runWhilePaused()
-    {
-        return false;
-    }
-
-    @Override
     public void advance(float amount)
     {
         CampaignClockAPI clock = Global.getSector().getClock();
@@ -507,6 +475,83 @@ public class OmniFac implements EveryFrameScript
         }
     }
     //</editor-fold>
+
+    @Override
+    public String getName()
+    {
+        return Constants.STATION_NAME;
+    }
+
+    @Override
+    public String getBuyVerb()
+    {
+        return (getTariff() > -1f ? "Buy" : "Take");
+    }
+
+    @Override
+    public String getSellVerb()
+    {
+        return (getTariff() < 1f ? "Sell" : "Leave");
+    }
+
+    @Override
+    public boolean isIllegalOnSubmarket(String commodityId, TransferAction action)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isIllegalOnSubmarket(CargoStackAPI stack, TransferAction action)
+    {
+        // Can't sell restricted or known weapons to the Omnifactory
+        if (action == TransferAction.PLAYER_SELL)
+        {
+            return (isRestrictedWeapon(stack) || !isUnknownWeapon(stack));
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean isIllegalOnSubmarket(FleetMemberAPI member, TransferAction action)
+    {
+        // Can't sell restricted or known ships to the Omnifactory
+        if (action == TransferAction.PLAYER_SELL)
+        {
+            return (isRestrictedShip(member) || !isUnknownShip(member));
+        }
+
+        return false;
+    }
+
+    @Override
+    public String getIllegalTransferText(CargoStackAPI stack, TransferAction action)
+    {
+        if (!stack.isWeaponStack() || isRestrictedWeapon(stack))
+        {
+            return "Unable to replicate";
+        }
+
+        return "Blueprint already known";
+    }
+
+    @Override
+    public String getIllegalTransferText(FleetMemberAPI member, TransferAction action)
+    {
+        return (isRestrictedShip(member) ? "Unable to replicate" : "Blueprint already known");
+    }
+
+    @Override
+    public float getTariff()
+    {
+        return OmniFacSettings.getOmnifactoryTariff();
+    }
+
+    @Override
+    public boolean isFreeTransfer()
+    {
+        return false;
+    }
 
     //<editor-fold desc="Internal data types">
     private static interface BaseData
@@ -536,23 +581,21 @@ public class OmniFac implements EveryFrameScript
         public boolean create();
     }
 
-    private static class ShipData implements BaseData
+    private class ShipData implements BaseData
     {
-        OmniFac fac;
         String id, displayName;
         FleetMemberType type;
         int fp, size, lastUpdate;
         boolean warnedLimit = false, isAnalyzed = false;
 
-        ShipData(FleetMemberAPI ship, OmniFac factory)
+        ShipData(FleetMemberAPI ship)
         {
-            fac = factory;
             id = parseHullName(ship);
             displayName = ship.getHullSpec().getHullName();
             type = ship.getType();
             fp = ship.getFleetPointCost();
             size = ship.getHullSpec().getHullSize().ordinal();
-            lastUpdate = fac.numHeartbeats;
+            lastUpdate = numHeartbeats;
         }
 
         @Override
@@ -592,7 +635,7 @@ public class OmniFac implements EveryFrameScript
         {
             int total = 0;
 
-            for (FleetMemberAPI tmp : fac.getCargo().getMothballedShips().getMembersListCopy())
+            for (FleetMemberAPI tmp : getCargo().getMothballedShips().getMembersListCopy())
             {
                 if (id.equals(parseHullName(tmp)))
                 {
@@ -645,13 +688,13 @@ public class OmniFac implements EveryFrameScript
         public void setAnalyzed(boolean isAnalyzed)
         {
             this.isAnalyzed = isAnalyzed;
-            lastUpdate = fac.numHeartbeats;
+            lastUpdate = numHeartbeats;
         }
 
         @Override
         public boolean create()
         {
-            lastUpdate = fac.numHeartbeats;
+            lastUpdate = numHeartbeats;
 
             if (getTotal() >= getLimit())
             {
@@ -659,28 +702,26 @@ public class OmniFac implements EveryFrameScript
             }
 
             warnedLimit = false;
-            fac.getCargo().addMothballedShip(type, id
+            getCargo().addMothballedShip(type, id
                     + (type.equals(FleetMemberType.FIGHTER_WING) ? "" : "_Hull"), null);
             return true;
         }
     }
 
-    private static class WeaponData implements BaseData
+    private class WeaponData implements BaseData
     {
-        OmniFac fac;
         String id, displayName;
         float size;
         int lastUpdate, stackSize;
         boolean warnedLimit = false, isAnalyzed = false;
 
-        WeaponData(CargoStackAPI stack, OmniFac factory)
+        WeaponData(CargoStackAPI stack)
         {
-            fac = factory;
             id = (String) stack.getData();
             displayName = stack.getDisplayName();
             size = stack.getCargoSpacePerUnit();
             stackSize = (int) stack.getMaxSize();
-            lastUpdate = fac.numHeartbeats;
+            lastUpdate = numHeartbeats;
         }
 
         @Override
@@ -717,7 +758,7 @@ public class OmniFac implements EveryFrameScript
         @Override
         public int getTotal()
         {
-            return fac.getCargo().getNumWeapons(id);
+            return getCargo().getNumWeapons(id);
         }
 
         @Override
@@ -748,13 +789,13 @@ public class OmniFac implements EveryFrameScript
         public void setAnalyzed(boolean isAnalyzed)
         {
             this.isAnalyzed = isAnalyzed;
-            lastUpdate = fac.numHeartbeats;
+            lastUpdate = numHeartbeats;
         }
 
         @Override
         public boolean create()
         {
-            lastUpdate = fac.numHeartbeats;
+            lastUpdate = numHeartbeats;
 
             if (getTotal() >= getLimit())
             {
@@ -762,7 +803,7 @@ public class OmniFac implements EveryFrameScript
             }
 
             warnedLimit = false;
-            fac.getCargo().addWeapons(id, 1);
+            getCargo().addWeapons(id, 1);
             return true;
         }
     }

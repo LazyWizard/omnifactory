@@ -2,6 +2,17 @@
 ==================================
 (this version is not save compatible with earlier versions)
 Rewrote Omnifactory as a submarket plugin
+Added getKnownShips(), getKnownWings(), getKnownWeapons()
+Added BlueprintData interface:
+ - int getDaysToAnalyze()
+ - int getDaysToCreate()
+ - int getLastUpdate()
+ - String getDisplayName()
+ - String getId()
+ - int getTotal()
+ - int getLimit()
+ - boolean isAnalyzed()
+ - setAnalyzed(boolean isAnalyzed)
 
  Version 1.10c (January 29, 2015)
 ==================================

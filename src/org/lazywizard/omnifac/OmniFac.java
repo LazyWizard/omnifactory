@@ -10,6 +10,8 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignClockAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.CargoStackAPI;
+import com.fs.starfarer.api.campaign.LocationAPI;
+import com.fs.starfarer.api.campaign.OrbitAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.SubmarketPlugin.TransferAction;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -62,7 +64,8 @@ public class OmniFac extends StoragePlugin
 
     public static boolean isFactory(SectorEntityToken station)
     {
-        return station.getMarket().hasSubmarket(Constants.SUBMARKET_ID);
+        return (station.getMarket() != null
+                && station.getMarket().hasSubmarket(Constants.SUBMARKET_ID));
     }
 
     public static OmniFac getFactory(SectorEntityToken station)
@@ -86,7 +89,7 @@ public class OmniFac extends StoragePlugin
     }
     //</editor-fold>
 
-    //<editor-fold desc="Stack/ship analysis">
+    //<editor-fold desc="Omnifactory local data">
     private static String parseHullName(FleetMemberAPI ship)
     {
         return (ship.isFighterWing() ? ship.getSpecId() : ship.getHullId());
@@ -146,6 +149,28 @@ public class OmniFac extends StoragePlugin
     public List<String> getKnownWeapons()
     {
         return new ArrayList<>(wepData.keySet());
+    }
+
+    public BlueprintData getShipBlueprint(String hullOrWingId)
+    {
+        return shipData.get(hullOrWingId);
+    }
+
+    public BlueprintData getWeaponBlueprint(String weaponId)
+    {
+        return wepData.get(weaponId);
+    }
+
+    public String getLocationString()
+    {
+        OrbitAPI orbit = station.getOrbit();
+        LocationAPI loc = station.getContainingLocation();
+        if (orbit == null || orbit.getFocus() == null)
+        {
+            return "orbiting nothing in " + loc.getName();
+        }
+
+        return "orbiting " + orbit.getFocus().getName() + " in " + loc.getName();
     }
     //</editor-fold>
 
@@ -208,7 +233,7 @@ public class OmniFac extends StoragePlugin
         List<String> analyzedWeps = new ArrayList<>();
         List<String> hitLimit = new ArrayList<>();
 
-        for (BaseData tmp : shipData.values())
+        for (BlueprintData tmp : shipData.values())
         {
             if (!tmp.isAnalyzed())
             {
@@ -218,7 +243,7 @@ public class OmniFac extends StoragePlugin
 
                     if (OmniFacSettings.shouldShowAnalysisComplete())
                     {
-                        analyzedShips.add(tmp.getName() + " ("
+                        analyzedShips.add(tmp.getDisplayName() + " ("
                                 + tmp.getDaysToCreate() + "d)");
                     }
                 }
@@ -233,26 +258,26 @@ public class OmniFac extends StoragePlugin
                         {
                             if (OmniFacSettings.shouldShowAddedCargo())
                             {
-                                addedShips.add(tmp.getName() + " (" + tmp.getTotal()
+                                addedShips.add(tmp.getDisplayName() + " (" + tmp.getTotal()
                                         + "/" + tmp.getLimit() + ")");
                             }
                         }
                         else if (OmniFacSettings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
                         {
-                            hitLimit.add(tmp.getName());
+                            hitLimit.add(tmp.getDisplayName());
                             tmp.setWarnedLimit(true);
                         }
                     }
                     catch (RuntimeException ex)
                     {
                         Global.getSector().getCampaignUI().addMessage(
-                                "Failed to create ship '" + tmp.getName() + "' ("
+                                "Failed to create ship '" + tmp.getDisplayName() + "' ("
                                 + tmp.getId() + ")! Was a required mod disabled?");
 
                         if (OmniFacSettings.shouldRemoveBrokenGoods())
                         {
                             Global.getSector().getCampaignUI().addMessage(
-                                    "Removed ship '" + tmp.getName() + "' from "
+                                    "Removed ship '" + tmp.getDisplayName() + "' from "
                                     + station.getName() + "'s memory banks.");
                             shipData.remove(tmp.getId());
                         }
@@ -261,7 +286,7 @@ public class OmniFac extends StoragePlugin
             }
         }
 
-        for (BaseData tmp : wepData.values())
+        for (BlueprintData tmp : wepData.values())
         {
             if (!tmp.isAnalyzed())
             {
@@ -271,7 +296,7 @@ public class OmniFac extends StoragePlugin
 
                     if (OmniFacSettings.shouldShowAnalysisComplete())
                     {
-                        analyzedWeps.add(tmp.getName() + " ("
+                        analyzedWeps.add(tmp.getDisplayName() + " ("
                                 + tmp.getDaysToCreate() + "d)");
                     }
                 }
@@ -286,26 +311,26 @@ public class OmniFac extends StoragePlugin
                         {
                             if (OmniFacSettings.shouldShowAddedCargo())
                             {
-                                addedWeps.add(tmp.getName() + " (" + tmp.getTotal()
+                                addedWeps.add(tmp.getDisplayName() + " (" + tmp.getTotal()
                                         + "/" + tmp.getLimit() + ")");
                             }
                         }
                         else if (OmniFacSettings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
                         {
-                            hitLimit.add(tmp.getName());
+                            hitLimit.add(tmp.getDisplayName());
                             tmp.setWarnedLimit(true);
                         }
                     }
                     catch (RuntimeException ex)
                     {
                         Global.getSector().getCampaignUI().addMessage(
-                                "Failed to create weapon '" + tmp.getName() + "' ("
+                                "Failed to create weapon '" + tmp.getDisplayName() + "' ("
                                 + tmp.getId() + ")! Was a required mod disabled?");
 
                         if (OmniFacSettings.shouldRemoveBrokenGoods())
                         {
                             Global.getSector().getCampaignUI().addMessage(
-                                    "Removed weapon '" + tmp.getName() + "' from "
+                                    "Removed weapon '" + tmp.getDisplayName() + "' from "
                                     + station.getName() + "'s memory banks.");
                             wepData.remove(tmp.getId());
                         }
@@ -383,12 +408,12 @@ public class OmniFac extends StoragePlugin
                 if (OmniFacSettings.getShipAnalysisTimeMod() == 0f)
                 {
                     tmp.setAnalyzed(true);
-                    newShips.add(tmp.getName() + " ("
+                    newShips.add(tmp.getDisplayName() + " ("
                             + tmp.getDaysToCreate() + "d)");
                 }
                 else
                 {
-                    newShips.add(tmp.getName() + " ("
+                    newShips.add(tmp.getDisplayName() + " ("
                             + tmp.getDaysToAnalyze() + "d)");
                 }
 
@@ -421,12 +446,12 @@ public class OmniFac extends StoragePlugin
                 if (OmniFacSettings.getWeaponAnalysisTimeMod() == 0f)
                 {
                     tmp.setAnalyzed(true);
-                    newWeps.add(tmp.getName() + " ("
+                    newWeps.add(tmp.getDisplayName() + " ("
                             + tmp.getDaysToCreate() + "d)");
                 }
                 else
                 {
-                    newWeps.add(tmp.getName() + " ("
+                    newWeps.add(tmp.getDisplayName() + " ("
                             + tmp.getDaysToAnalyze() + "d)");
                 }
 
@@ -594,15 +619,15 @@ public class OmniFac extends StoragePlugin
 //</editor-fold>
 
     //<editor-fold desc="Internal data types">
-    private static interface BaseData
+    public static interface BlueprintData
     {
         public int getDaysToAnalyze();
 
         public int getDaysToCreate();
 
-        public int getLastUpdate();
+        int getLastUpdate();
 
-        public String getName();
+        public String getDisplayName();
 
         public String getId();
 
@@ -610,18 +635,18 @@ public class OmniFac extends StoragePlugin
 
         public int getLimit();
 
-        public boolean hasWarnedLimit();
+        boolean hasWarnedLimit();
 
-        public void setWarnedLimit(boolean hasWarned);
+        void setWarnedLimit(boolean hasWarned);
 
         public boolean isAnalyzed();
 
         public void setAnalyzed(boolean isAnalyzed);
 
-        public boolean create();
+        boolean create();
     }
 
-    private class ShipData implements BaseData
+    private class ShipData implements BlueprintData
     {
         String id, displayName;
         FleetMemberType type;
@@ -659,7 +684,7 @@ public class OmniFac extends StoragePlugin
         }
 
         @Override
-        public String getName()
+        public String getDisplayName()
         {
             return displayName;
         }
@@ -748,7 +773,7 @@ public class OmniFac extends StoragePlugin
         }
     }
 
-    private class WeaponData implements BaseData
+    private class WeaponData implements BlueprintData
     {
         String id, displayName;
         float size;
@@ -784,7 +809,7 @@ public class OmniFac extends StoragePlugin
         }
 
         @Override
-        public String getName()
+        public String getDisplayName()
         {
             return displayName;
         }

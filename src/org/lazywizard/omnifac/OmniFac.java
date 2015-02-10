@@ -161,16 +161,29 @@ public class OmniFac extends StoragePlugin
         return wepData.get(weaponId);
     }
 
+    public SectorEntityToken getStation()
+    {
+        return station;
+    }
+
     public String getLocationString()
     {
         OrbitAPI orbit = station.getOrbit();
         LocationAPI loc = station.getContainingLocation();
         if (orbit == null || orbit.getFocus() == null)
         {
-            return "orbiting nothing in " + loc.getName();
+            return "orbiting nothing in " + (loc == null ? " nowhere" : loc.getName());
         }
 
         return "orbiting " + orbit.getFocus().getName() + " in " + loc.getName();
+    }
+
+    @Override
+    public String toString()
+    {
+        return station.getName() + " " + getLocationString()
+                + " (" + shipData.size() + " ships, " + wepData.size()
+                + " weapons known)";
     }
     //</editor-fold>
 
@@ -564,7 +577,22 @@ public class OmniFac extends StoragePlugin
         // Can't sell restricted or known weapons to the Omnifactory
         if (action == TransferAction.PLAYER_SELL)
         {
-            return (isRestrictedWeapon(stack) || !isUnknownWeapon(stack));
+            if (stack.isCrewStack())
+            {
+                return !(OmniFacSettings.getRequiredCrew() > 0);
+            }
+            else if (stack.isFuelStack())
+            {
+                return !(OmniFacSettings.getRequiredFuelPerDay() > 0f);
+            }
+            else if (stack.isSupplyStack())
+            {
+                return !(OmniFacSettings.getRequiredSuppliesPerDay() > 0f);
+            }
+            else
+            {
+                return (isRestrictedWeapon(stack) || !isUnknownWeapon(stack));
+            }
         }
 
         return false;
@@ -616,7 +644,15 @@ public class OmniFac extends StoragePlugin
     {
         return false;
     }
-//</editor-fold>
+
+    @Override
+    public void updateCargoPrePlayerInteraction()
+    {
+        // TODO: Modify demand
+        market.getDemandPriceMod().modifyMult("omnifac", 9999f);
+        System.out.println(market.getDemandPriceMod().getBonusMult());
+    }
+    //</editor-fold>
 
     //<editor-fold desc="Internal data types">
     public static interface BlueprintData

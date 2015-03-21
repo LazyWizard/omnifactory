@@ -10,7 +10,7 @@ import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
 
 public class Omnifactory implements EveryFrameScript
 {
-    // String = id, Integer = last heartbeat when a good was created
+    // String = id, Integer = last heartbeat when the good was created
     private final Map<String, Integer> knownShips, knownWings, knownWeapons;
     private final SubmarketAPI submarket;
     private long lastHeartbeat;

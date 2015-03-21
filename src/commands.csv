@@ -1,2 +1,3 @@
 command,class,tags,syntax,help
-OmnifacStatus,org.lazywizard.omnifac.commands.OmnifacStatus,"omnifac,campaign",omnifacstatus [detailed],"Shows the location of all active Omnifactories, including their known blueprints if ""detailed"" is entered as an argument."
+#OmnifacStatus,org.lazywizard.omnifac.commands.OmnifacStatus,"omnifac,campaign",omnifacstatus [detailed],"Shows the location of all active Omnifactories, including their known blueprints if ""detailed"" is entered as an argument."
+ListBlueprints,org.lazywizard.omnifactory.commands.ListBlueprints,"omnifac,campaign",listblueprints (no arguments),"Shows all possible blueprints for the Omnifactory."

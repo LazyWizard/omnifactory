@@ -12,6 +12,7 @@ public class OmnifactoryModPlugin extends BaseModPlugin
     @Override
     public void onGameLoad()
     {
+        // Done in onGameLoad() because BlueprintMaster requires a sector and a factory
         if (!HAS_LOADED)
         {
             HAS_LOADED = true;
@@ -27,6 +28,7 @@ public class OmnifactoryModPlugin extends BaseModPlugin
             }
         }
 
+        // TODO
         Global.getSector().addTransientScript(new Omnifactory(
                 Global.getSector().getEconomy().getMarketsCopy().get(0).getSubmarketsCopy().get(0)));
     }

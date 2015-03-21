@@ -1,4 +1,4 @@
-package org.lazywizard.omnifac;
+package org.lazywizard.omnifactory;
 
 import java.io.IOException;
 import java.text.DecimalFormat;

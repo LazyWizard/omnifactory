@@ -1,4 +1,4 @@
-package org.lazywizard.omnifac;
+package org.lazywizard.omnifactory;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -14,6 +14,10 @@ import org.json.JSONObject;
 
 public class OmnifactorySettings
 {
+    private static final String MOD_ID = "lw_omnifac";
+    private static final String SETTINGS_FILE = "data/config/omnifactory/omnifac_settings.json";
+    private static final String RESTRICTED_WEAPONS_CSV = "data/config/omnifactory/restricted_weapons.csv";
+    private static final String RESTRICTED_SHIPS_CSV = "data/config/omnifactory/restricted_ships.csv";
     private static Set<String> restrictedWeapons;
     private static Set<String> restrictedShips;
     private static boolean randomLocation;
@@ -63,7 +67,7 @@ public class OmnifactorySettings
 
         // Restricted goods
         JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod("weapon id",
-                Constants.RESTRICTED_WEAPONS_CSV, Constants.MOD_ID);
+                RESTRICTED_WEAPONS_CSV, MOD_ID);
         restrictedWeapons = new HashSet<>();
         for (int x = 0; x < csv.length(); x++)
         {
@@ -73,7 +77,7 @@ public class OmnifactorySettings
 
         // Restricted ships
         csv = Global.getSettings().getMergedSpreadsheetDataForMod("hull id",
-                Constants.RESTRICTED_SHIPS_CSV, Constants.MOD_ID);
+                RESTRICTED_SHIPS_CSV, MOD_ID);
         restrictedShips = new HashSet<>();
         for (int x = 0; x < csv.length(); x++)
         {

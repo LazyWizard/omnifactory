@@ -1,4 +1,4 @@
-package org.lazywizard.omnifac;
+package org.lazywizard.omnifactory;
 
 import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;

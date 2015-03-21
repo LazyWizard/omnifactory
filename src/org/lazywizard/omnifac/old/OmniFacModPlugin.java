@@ -1,4 +1,4 @@
-package org.lazywizard.omnifac;
+package org.lazywizard.omnifac.old;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,14 +21,17 @@ import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 import org.apache.log4j.Level;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.CollectionUtils.CollectionFilter;
+import org.lazywizard.omnifactory.OmnifactorySettings;
 
 public class OmniFacModPlugin extends BaseModPlugin
 {
+    private static boolean HAS_LOADED = false;
+
     private static SectorEntityToken createOmnifactory()
     {
         SectorAPI sector = Global.getSector();
 
-        if (!OmniFacSettings.shouldHaveRandomStartingLocation())
+        if (false) //!OmnifactorySettings.shouldHaveRandomStartingLocation())
         {
             StarSystemAPI corvus = sector.getStarSystem("corvus");
             if (corvus != null)
@@ -93,7 +96,7 @@ public class OmniFacModPlugin extends BaseModPlugin
     @Override
     public void onApplicationLoad() throws Exception
     {
-        OmniFacSettings.reloadSettings();
+        OmnifactorySettings.reloadSettings();
     }
 
     @Override

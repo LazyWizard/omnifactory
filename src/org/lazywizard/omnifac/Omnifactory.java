@@ -34,7 +34,7 @@ public class Omnifactory implements EveryFrameScript
     public boolean addShipBlueprint(String hullId)
     {
         // Not a valid id
-        if (!GoodData.getShipData().containsKey(hullId))
+        if (!BlueprintMaster.getShipBlueprints().containsKey(hullId))
         {
             return false;
         }
@@ -58,7 +58,7 @@ public class Omnifactory implements EveryFrameScript
     public boolean addWingBlueprint(String wingId)
     {
         // Not a valid id
-        if (!GoodData.getWingData().containsKey(wingId))
+        if (!BlueprintMaster.getWingBlueprints().containsKey(wingId))
         {
             return false;
         }
@@ -82,7 +82,7 @@ public class Omnifactory implements EveryFrameScript
     public boolean addWeaponBlueprint(String weaponId)
     {
         // Not a valid id
-        if (!GoodData.getWeaponData().containsKey(weaponId))
+        if (!BlueprintMaster.getWeaponBlueprints().containsKey(weaponId))
         {
             return false;
         }
@@ -129,6 +129,7 @@ public class Omnifactory implements EveryFrameScript
         {
             lastHeartbeat = clock.getTimestamp();
             numHeartbeats++;
+            System.out.println("Heartbeat #" + numHeartbeats);
             /*heartbeat();
 
              if (checkCargo())

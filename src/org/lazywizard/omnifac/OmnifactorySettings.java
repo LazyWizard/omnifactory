@@ -2,14 +2,17 @@ package org.lazywizard.omnifac;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.combat.ShipAPI.HullSize;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class OmniFacSettings
+public class OmnifactorySettings
 {
     private static Set<String> restrictedWeapons;
     private static Set<String> restrictedShips;
@@ -26,11 +29,7 @@ public class OmniFacSettings
     private static int requiredCrew;
     private static float requiredSuppliesPerDay;
     private static float requiredFuelPerDay;
-    private static int maxHullsPerFighter;
-    private static int maxHullsPerFrigate;
-    private static int maxHullsPerDestroyer;
-    private static int maxHullsPerCruiser;
-    private static int maxHullsPerCapital;
+    private static Map<HullSize, Integer> maxHullsPerShip;
     private static float maxStacksPerWeapon;
     private static float omnifactoryTariff;
 
@@ -51,13 +50,16 @@ public class OmniFacSettings
         requiredCrew = settings.getInt("requiredCrewToFunction");
         requiredSuppliesPerDay = (float) settings.getDouble("requiredSuppliesPerDay");
         requiredFuelPerDay = (float) settings.getDouble("requiredFuelPerDay");
-        maxHullsPerFighter = settings.getInt("maxHullsPerFighter");
-        maxHullsPerFrigate = settings.getInt("maxHullsPerFrigate");
-        maxHullsPerDestroyer = settings.getInt("maxHullsPerDestroyer");
-        maxHullsPerCruiser = settings.getInt("maxHullsPerCruiser");
-        maxHullsPerCapital = settings.getInt("maxHullsPerCapital");
-        maxStacksPerWeapon = (float) settings.getDouble("maxStacksPerWeapon");
         omnifactoryTariff = (float) settings.getDouble("omnifactoryTariff");
+
+        maxHullsPerShip = new EnumMap<>(HullSize.class);
+        maxHullsPerShip.put(HullSize.DEFAULT, 0);
+        maxHullsPerShip.put(HullSize.FIGHTER, settings.getInt("maxHullsPerFighter"));
+        maxHullsPerShip.put(HullSize.FRIGATE, settings.getInt("maxHullsPerFrigate"));
+        maxHullsPerShip.put(HullSize.DESTROYER, settings.getInt("maxHullsPerDestroyer"));
+        maxHullsPerShip.put(HullSize.CRUISER, settings.getInt("maxHullsPerCruiser"));
+        maxHullsPerShip.put(HullSize.CAPITAL_SHIP, settings.getInt("maxHullsPerCapital"));
+        maxStacksPerWeapon = (float) settings.getDouble("maxStacksPerWeapon");
 
         // Restricted goods
         JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod("weapon id",
@@ -160,29 +162,9 @@ public class OmniFacSettings
         return requiredFuelPerDay;
     }
 
-    public static int getMaxHullsPerFighter()
+    public static int getMaxHullsPerShip(HullSize size)
     {
-        return maxHullsPerFighter;
-    }
-
-    public static int getMaxHullsPerFrigate()
-    {
-        return maxHullsPerFrigate;
-    }
-
-    public static int getMaxHullsPerDestroyer()
-    {
-        return maxHullsPerDestroyer;
-    }
-
-    public static int getMaxHullsPerCruiser()
-    {
-        return maxHullsPerCruiser;
-    }
-
-    public static int getMaxHullsPerCapital()
-    {
-        return maxHullsPerCapital;
+        return maxHullsPerShip.get(size);
     }
 
     public static float getMaxStacksPerWeapon()
@@ -195,7 +177,7 @@ public class OmniFacSettings
         return omnifactoryTariff;
     }
 
-    private OmniFacSettings()
+    private OmnifactorySettings()
     {
     }
 }

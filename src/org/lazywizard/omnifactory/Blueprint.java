@@ -44,16 +44,16 @@ public class Blueprint
         {
             case SMALL:
                 baseDaysToCreate = 5;
-                baseLimit = 20;
+                baseLimit = 40;
                 break;
             case MEDIUM:
                 baseDaysToCreate = 10;
-                baseLimit = 10;
+                baseLimit = 20;
                 break;
             case LARGE:
             default:
                 baseDaysToCreate = 20;
-                baseLimit = 5;
+                baseLimit = 10;
                 break;
         }
 
@@ -68,7 +68,7 @@ public class Blueprint
         return id;
     }
 
-    public String getName()
+    public String getDisplayName()
     {
         return displayName;
     }

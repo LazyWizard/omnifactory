@@ -73,6 +73,11 @@ public class OmniFac extends StoragePlugin
         return (OmniFac) station.getMarket().getSubmarket(Constants.SUBMARKET_ID).getPlugin();
     }
 
+    public static SubmarketAPI getFactoryMarket(SectorEntityToken station)
+    {
+        return station.getMarket().getSubmarket(Constants.SUBMARKET_ID);
+    }
+
     public static List<OmniFac> getAllFactories()
     {
         List<OmniFac> factories = new ArrayList<>();
@@ -649,8 +654,6 @@ public class OmniFac extends StoragePlugin
     public void updateCargoPrePlayerInteraction()
     {
         // TODO: Modify demand
-        market.getDemandPriceMod().modifyMult("omnifac", 9999f);
-        System.out.println(market.getDemandPriceMod().getBonusMult());
     }
     //</editor-fold>
 
@@ -821,7 +824,10 @@ public class OmniFac extends StoragePlugin
             id = (String) stack.getData();
             displayName = stack.getDisplayName();
             size = stack.getCargoSpacePerUnit();
-            stackSize = (int) stack.getMaxSize();
+            //2 40
+            //4 20
+            //8 10
+            stackSize = (int) (80 / stack.getCargoSpacePerUnit());
             lastUpdate = numHeartbeats;
         }
 

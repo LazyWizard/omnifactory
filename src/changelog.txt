@@ -2,15 +2,18 @@
 ==================================
 (this version is not save compatible with earlier versions)
 Rewrote Omnifactory as a submarket plugin
+Fixed resources being illegal even if the setting to make them required is on
+Fixed weapon production limits being ludicrously high post-market update
+Added console command OmnifacStatus, shows location and data for all factories
 Added getKnownShips(), getKnownWings(), getKnownWeapons()
 Added BlueprintData interface:
  - int getDaysToAnalyze()
  - int getDaysToCreate()
  - int getLastUpdate()
- - String getDisplayName()
  - String getId()
- - int getTotal()
+ - String getDisplayName()
  - int getLimit()
+ - int getTotal()
  - boolean isAnalyzed()
  - setAnalyzed(boolean isAnalyzed)
 

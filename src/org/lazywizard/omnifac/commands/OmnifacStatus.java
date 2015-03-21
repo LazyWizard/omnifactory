@@ -19,7 +19,7 @@ public class OmnifacStatus implements BaseCommand
             return CommandResult.WRONG_CONTEXT;
         }
 
-        List<OmniFac> factories = OmniFac.getAllFactories();
+        final List<OmniFac> factories = OmniFac.getAllFactories();
         if (factories.isEmpty())
         {
             Console.showMessage("There are no active Omnifactories in this save!");
@@ -28,22 +28,34 @@ public class OmnifacStatus implements BaseCommand
 
         final boolean showDetailed = "detailed".equals(args);
         final int lineLength = Console.getSettings().getMaxOutputLineLength() - 3;
+        final StringBuilder output = new StringBuilder("Active Omnifactories ("
+                + factories.size() + "):\n");
         for (OmniFac fac : factories)
         {
-            Console.showMessage("Factory " + fac.getLocationString());
-
             // TODO: Format this to look good
             if (showDetailed)
             {
-                Console.showMessage(StringUtils.indent(StringUtils.wrapString("Known ships: "
-                        + CollectionUtils.implode(fac.getKnownShips()), lineLength), "  "));
-                Console.showMessage(StringUtils.indent(StringUtils.wrapString("Known wings: "
-                        + CollectionUtils.implode(fac.getKnownWings()), lineLength), "  "));
-                Console.showMessage(StringUtils.indent(StringUtils.wrapString("Known weapons: "
-                        + CollectionUtils.implode(fac.getKnownWeapons()), lineLength), "  "));
+                output.append(" - " + fac + "\n"
+                        + StringUtils.indent(StringUtils.wrapString("Known ships: "
+                                        + CollectionUtils.implode(fac.getKnownShips()), lineLength), "  ")
+                        + StringUtils.indent(StringUtils.wrapString("Known wings: "
+                                        + CollectionUtils.implode(fac.getKnownWings()), lineLength), "  ")
+                        + StringUtils.indent(StringUtils.wrapString("Known weapons: "
+                                        + CollectionUtils.implode(fac.getKnownWeapons()), lineLength), "  "));
+            }
+            else
+            {
+                output.append(" - " + fac + "\n");
             }
         }
 
+        if (!showDetailed)
+        {
+            output.append("\nUse \"" + OmnifacStatus.class.getSimpleName()
+                    + " detailed\" to show more details.");
+        }
+
+        Console.showMessage(output.toString());
         return CommandResult.SUCCESS;
     }
 }

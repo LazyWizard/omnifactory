@@ -1,4 +1,4 @@
-package org.lazywizard.omnifac;
+package org.lazywizard.omnifac.old;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,11 +16,13 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.SubmarketPlugin.TransferAction;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
+import com.fs.starfarer.api.combat.ShipAPI.HullSize;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
+import org.lazywizard.omnifactory.OmnifactorySettings;
 
 public class OmniFac extends StoragePlugin
 {
@@ -113,12 +115,12 @@ public class OmniFac extends StoragePlugin
 
     public boolean isRestrictedShip(FleetMemberAPI ship)
     {
-        return OmniFacSettings.getRestrictedShips().contains(parseHullName(ship));
+        return OmnifactorySettings.getRestrictedShips().contains(parseHullName(ship));
     }
 
     public boolean isRestrictedWeapon(CargoStackAPI stack)
     {
-        return OmniFacSettings.getRestrictedWeapons().contains(stack.getData());
+        return OmnifactorySettings.getRestrictedWeapons().contains(stack.getData());
     }
 
     public List<String> getKnownShips()
@@ -198,36 +200,36 @@ public class OmniFac extends StoragePlugin
         boolean metRequirements = true;
         CargoAPI cargo = getCargo();
 
-        if (cargo.getTotalCrew() < OmniFacSettings.getRequiredCrew())
+        if (cargo.getTotalCrew() < OmnifactorySettings.getRequiredCrew())
         {
             if (!warnedRequirements)
             {
                 Global.getSector().getCampaignUI().addMessage("The " + station.getName()
-                        + " needs " + (OmniFacSettings.getRequiredCrew() - cargo.getTotalCrew())
+                        + " needs " + (OmnifactorySettings.getRequiredCrew() - cargo.getTotalCrew())
                         + " more crew to function.");
             }
 
             metRequirements = false;
         }
 
-        if (cargo.getFuel() < OmniFacSettings.getRequiredFuelPerDay())
+        if (cargo.getFuel() < OmnifactorySettings.getRequiredFuelPerDay())
         {
             if (!warnedRequirements)
             {
                 Global.getSector().getCampaignUI().addMessage("The " + station.getName()
-                        + " is out of fuel. It requires " + OmniFacSettings.getRequiredFuelPerDay()
+                        + " is out of fuel. It requires " + OmnifactorySettings.getRequiredFuelPerDay()
                         + " per day to function.");
             }
 
             metRequirements = false;
         }
 
-        if (cargo.getSupplies() < OmniFacSettings.getRequiredSuppliesPerDay())
+        if (cargo.getSupplies() < OmnifactorySettings.getRequiredSuppliesPerDay())
         {
             if (!warnedRequirements)
             {
                 Global.getSector().getCampaignUI().addMessage("The " + station.getName()
-                        + " is out of supplies. It requires " + OmniFacSettings.getRequiredSuppliesPerDay()
+                        + " is out of supplies. It requires " + OmnifactorySettings.getRequiredSuppliesPerDay()
                         + " per day to function.");
             }
 
@@ -241,8 +243,8 @@ public class OmniFac extends StoragePlugin
         }
 
         warnedRequirements = false;
-        cargo.removeSupplies(OmniFacSettings.getRequiredSuppliesPerDay());
-        cargo.removeFuel(OmniFacSettings.getRequiredFuelPerDay());
+        cargo.removeSupplies(OmnifactorySettings.getRequiredSuppliesPerDay());
+        cargo.removeFuel(OmnifactorySettings.getRequiredFuelPerDay());
         numHeartbeats++;
 
         List<String> addedShips = new ArrayList<>();
@@ -259,7 +261,7 @@ public class OmniFac extends StoragePlugin
                 {
                     tmp.setAnalyzed(true);
 
-                    if (OmniFacSettings.shouldShowAnalysisComplete())
+                    if (OmnifactorySettings.shouldShowAnalysisComplete())
                     {
                         analyzedShips.add(tmp.getDisplayName() + " ("
                                 + tmp.getDaysToCreate() + "d)");
@@ -274,13 +276,13 @@ public class OmniFac extends StoragePlugin
                     {
                         if (tmp.create())
                         {
-                            if (OmniFacSettings.shouldShowAddedCargo())
+                            if (OmnifactorySettings.shouldShowAddedCargo())
                             {
                                 addedShips.add(tmp.getDisplayName() + " (" + tmp.getTotal()
                                         + "/" + tmp.getLimit() + ")");
                             }
                         }
-                        else if (OmniFacSettings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
+                        else if (OmnifactorySettings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
                         {
                             hitLimit.add(tmp.getDisplayName());
                             tmp.setWarnedLimit(true);
@@ -292,7 +294,7 @@ public class OmniFac extends StoragePlugin
                                 "Failed to create ship '" + tmp.getDisplayName() + "' ("
                                 + tmp.getId() + ")! Was a required mod disabled?");
 
-                        if (OmniFacSettings.shouldRemoveBrokenGoods())
+                        if (OmnifactorySettings.shouldRemoveBrokenGoods())
                         {
                             Global.getSector().getCampaignUI().addMessage(
                                     "Removed ship '" + tmp.getDisplayName() + "' from "
@@ -312,7 +314,7 @@ public class OmniFac extends StoragePlugin
                 {
                     tmp.setAnalyzed(true);
 
-                    if (OmniFacSettings.shouldShowAnalysisComplete())
+                    if (OmnifactorySettings.shouldShowAnalysisComplete())
                     {
                         analyzedWeps.add(tmp.getDisplayName() + " ("
                                 + tmp.getDaysToCreate() + "d)");
@@ -327,13 +329,13 @@ public class OmniFac extends StoragePlugin
                     {
                         if (tmp.create())
                         {
-                            if (OmniFacSettings.shouldShowAddedCargo())
+                            if (OmnifactorySettings.shouldShowAddedCargo())
                             {
                                 addedWeps.add(tmp.getDisplayName() + " (" + tmp.getTotal()
                                         + "/" + tmp.getLimit() + ")");
                             }
                         }
-                        else if (OmniFacSettings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
+                        else if (OmnifactorySettings.shouldShowLimitReached() && !tmp.hasWarnedLimit())
                         {
                             hitLimit.add(tmp.getDisplayName());
                             tmp.setWarnedLimit(true);
@@ -345,7 +347,7 @@ public class OmniFac extends StoragePlugin
                                 "Failed to create weapon '" + tmp.getDisplayName() + "' ("
                                 + tmp.getId() + ")! Was a required mod disabled?");
 
-                        if (OmniFacSettings.shouldRemoveBrokenGoods())
+                        if (OmnifactorySettings.shouldRemoveBrokenGoods())
                         {
                             Global.getSector().getCampaignUI().addMessage(
                                     "Removed weapon '" + tmp.getDisplayName() + "' from "
@@ -357,7 +359,7 @@ public class OmniFac extends StoragePlugin
             }
         }
 
-        if (OmniFacSettings.shouldShowAddedCargo())
+        if (OmnifactorySettings.shouldShowAddedCargo())
         {
             if (!addedShips.isEmpty())
             {
@@ -375,7 +377,7 @@ public class OmniFac extends StoragePlugin
             }
         }
 
-        if (OmniFacSettings.shouldShowLimitReached() && !hitLimit.isEmpty())
+        if (OmnifactorySettings.shouldShowLimitReached() && !hitLimit.isEmpty())
         {
             Collections.sort(hitLimit);
             MessageUtils.showMessage("The " + station.getName()
@@ -383,7 +385,7 @@ public class OmniFac extends StoragePlugin
                     CollectionUtils.implode(hitLimit) + ".", true);
         }
 
-        if (OmniFacSettings.shouldShowAnalysisComplete())
+        if (OmnifactorySettings.shouldShowAnalysisComplete())
         {
             if (!analyzedShips.isEmpty())
             {
@@ -423,7 +425,7 @@ public class OmniFac extends StoragePlugin
                 String id = parseHullName(ship);
                 ShipData tmp = new ShipData(ship);
 
-                if (OmniFacSettings.getShipAnalysisTimeMod() == 0f)
+                if (OmnifactorySettings.getShipAnalysisTimeMod() == 0f)
                 {
                     tmp.setAnalyzed(true);
                     newShips.add(tmp.getDisplayName() + " ("
@@ -461,7 +463,7 @@ public class OmniFac extends StoragePlugin
                 newItem = true;
                 WeaponData tmp = new WeaponData(stack);
 
-                if (OmniFacSettings.getWeaponAnalysisTimeMod() == 0f)
+                if (OmnifactorySettings.getWeaponAnalysisTimeMod() == 0f)
                 {
                     tmp.setAnalyzed(true);
                     newWeps.add(tmp.getDisplayName() + " ("
@@ -481,7 +483,7 @@ public class OmniFac extends StoragePlugin
         if (!newShips.isEmpty())
         {
             Collections.sort(newShips);
-            if (OmniFacSettings.getShipAnalysisTimeMod() == 0f)
+            if (OmnifactorySettings.getShipAnalysisTimeMod() == 0f)
             {
                 MessageUtils.showMessage("New ship blueprints added to the "
                         + station.getName() + ":",
@@ -499,7 +501,7 @@ public class OmniFac extends StoragePlugin
         if (!newWeps.isEmpty())
         {
             Collections.sort(newWeps);
-            if (OmniFacSettings.getWeaponAnalysisTimeMod() == 0f)
+            if (OmnifactorySettings.getWeaponAnalysisTimeMod() == 0f)
             {
                 MessageUtils.showMessage("New weapon blueprints added to the "
                         + station.getName() + ":",
@@ -584,15 +586,15 @@ public class OmniFac extends StoragePlugin
         {
             if (stack.isCrewStack())
             {
-                return !(OmniFacSettings.getRequiredCrew() > 0);
+                return !(OmnifactorySettings.getRequiredCrew() > 0);
             }
             else if (stack.isFuelStack())
             {
-                return !(OmniFacSettings.getRequiredFuelPerDay() > 0f);
+                return !(OmnifactorySettings.getRequiredFuelPerDay() > 0f);
             }
             else if (stack.isSupplyStack())
             {
-                return !(OmniFacSettings.getRequiredSuppliesPerDay() > 0f);
+                return !(OmnifactorySettings.getRequiredSuppliesPerDay() > 0f);
             }
             else
             {
@@ -635,7 +637,7 @@ public class OmniFac extends StoragePlugin
     @Override
     public float getTariff()
     {
-        return OmniFacSettings.getOmnifactoryTariff();
+        return OmnifactorySettings.getOmnifactoryTariff();
     }
 
     @Override
@@ -706,13 +708,13 @@ public class OmniFac extends StoragePlugin
         public int getDaysToAnalyze()
         {
             return (int) Math.max(1f,
-                    getDaysToCreate() * OmniFacSettings.getShipAnalysisTimeMod());
+                    getDaysToCreate() * OmnifactorySettings.getShipAnalysisTimeMod());
         }
 
         @Override
         public int getDaysToCreate()
         {
-            return (int) Math.max(((fp * size) / 2f) * OmniFacSettings.getShipProductionTimeMod(),
+            return (int) Math.max(((fp * size) / 2f) * OmnifactorySettings.getShipProductionTimeMod(),
                     size * 3f);
         }
 
@@ -753,21 +755,22 @@ public class OmniFac extends StoragePlugin
         @Override
         public int getLimit()
         {
-            switch (size)
+            return OmnifactorySettings.getMaxHullsPerShip(HullSize.values()[size]);
+            /*switch (size)
             {
                 case 1:
-                    return OmniFacSettings.getMaxHullsPerFighter();
+                    return OmnifactorySettings.getMaxHullsPerFighter();
                 case 2:
-                    return OmniFacSettings.getMaxHullsPerFrigate();
+                    return OmnifactorySettings.getMaxHullsPerFrigate();
                 case 3:
-                    return OmniFacSettings.getMaxHullsPerDestroyer();
+                    return OmnifactorySettings.getMaxHullsPerDestroyer();
                 case 4:
-                    return OmniFacSettings.getMaxHullsPerCruiser();
+                    return OmnifactorySettings.getMaxHullsPerCruiser();
                 case 5:
-                    return OmniFacSettings.getMaxHullsPerCapital();
+                    return OmnifactorySettings.getMaxHullsPerCapital();
                 default:
                     return 0;
-            }
+            }*/
         }
 
         @Override
@@ -835,13 +838,13 @@ public class OmniFac extends StoragePlugin
         public int getDaysToAnalyze()
         {
             return (int) Math.max(1f,
-                    getDaysToCreate() * OmniFacSettings.getWeaponAnalysisTimeMod());
+                    getDaysToCreate() * OmnifactorySettings.getWeaponAnalysisTimeMod());
         }
 
         @Override
         public int getDaysToCreate()
         {
-            return (int) Math.max(size * OmniFacSettings.getWeaponProductionTimeMod(), 1f);
+            return (int) Math.max(size * OmnifactorySettings.getWeaponProductionTimeMod(), 1f);
         }
 
         @Override
@@ -871,7 +874,7 @@ public class OmniFac extends StoragePlugin
         @Override
         public int getLimit()
         {
-            return (int) (stackSize * OmniFacSettings.getMaxStacksPerWeapon());
+            return (int) (stackSize * OmnifactorySettings.getMaxStacksPerWeapon());
         }
 
         @Override

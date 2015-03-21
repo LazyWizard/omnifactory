@@ -6,7 +6,7 @@ import org.lazywizard.console.CommonStrings;
 import org.lazywizard.console.Console;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.StringUtils;
-import org.lazywizard.omnifac.OmniFac;
+import org.lazywizard.omnifac.old.OmniFac;
 
 public class OmnifacStatus implements BaseCommand
 {

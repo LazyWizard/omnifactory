@@ -1,4 +1,4 @@
-package org.lazywizard.omnifac;
+package org.lazywizard.omnifactory;
 
 import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;

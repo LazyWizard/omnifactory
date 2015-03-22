@@ -2,10 +2,8 @@ package org.lazywizard.omnifactory;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CargoAPI;
@@ -14,16 +12,18 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import org.apache.log4j.Level;
 import org.json.JSONException;
-import org.lazywizard.console.Console;
 
 public class BlueprintMaster
 {
     private static final Map<String, Blueprint> shipBlueprints = new HashMap<>();
     private static final Map<String, Blueprint> wingBlueprints = new HashMap<>();
     private static final Map<String, Blueprint> weaponBlueprints = new HashMap<>();
+    private static boolean HAS_LOADED = false;
 
     public static void reloadBlueprints() throws IOException, JSONException
     {
+        HAS_LOADED = true;
+
         long startTime = System.nanoTime();
         // Load ship data
         shipBlueprints.clear();
@@ -68,44 +68,54 @@ public class BlueprintMaster
                 + wingBlueprints.size() + " wings, and " + weaponBlueprints.size()
                 + " weapons in " + DecimalFormat.getNumberInstance().format(
                         (endTime - startTime) / 1000000000.0d) + " seconds");
+    }
 
-        // Debug
-        List<Blueprint> datas = new ArrayList<>(shipBlueprints.values());
-        datas.addAll(wingBlueprints.values());
-        datas.addAll(weaponBlueprints.values());
-        for (Blueprint data : datas)
+    private static void checkLoaded()
+    {
+        if (!HAS_LOADED)
         {
-            Console.showMessage("\n" + data, Level.ALL);
+            try
+            {
+                reloadBlueprints();
+            }
+            catch (IOException | JSONException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    public static Blueprint getBlueprint(Blueprint.BlueprintType type, String id)
+    {
+        checkLoaded();
+        switch (type)
+        {
+            case SHIP:
+                return shipBlueprints.get(id);
+            case WING:
+                return wingBlueprints.get(id);
+            case WEAPON:
+                return weaponBlueprints.get(id);
+            default:
+                throw new RuntimeException("No such blueprint type: " + type);
         }
     }
 
     public static Map<String, Blueprint> getShipBlueprints()
     {
+        checkLoaded();
         return Collections.unmodifiableMap(shipBlueprints);
-    }
-
-    public static Blueprint getShipBlueprint(String hullId)
-    {
-        return shipBlueprints.get(hullId);
     }
 
     public static Map<String, Blueprint> getWingBlueprints()
     {
+        checkLoaded();
         return Collections.unmodifiableMap(wingBlueprints);
-    }
-
-    public static Blueprint getWingBlueprint(String wingId)
-    {
-        return wingBlueprints.get(wingId);
     }
 
     public static Map<String, Blueprint> getWeaponBlueprints()
     {
+        checkLoaded();
         return Collections.unmodifiableMap(weaponBlueprints);
-    }
-
-    public static Blueprint getWeaponBlueprint(String weaponId)
-    {
-        return weaponBlueprints.get(weaponId);
     }
 }

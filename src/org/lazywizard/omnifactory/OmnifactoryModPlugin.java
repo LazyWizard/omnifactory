@@ -1,36 +1,29 @@
 package org.lazywizard.omnifactory;
 
-import java.io.IOException;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
-import org.json.JSONException;
+import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 
 public class OmnifactoryModPlugin extends BaseModPlugin
 {
-    private static boolean HAS_LOADED = false;
+    @Override
+    public void onApplicationLoad() throws Exception
+    {
+        OmnifactorySettings.reloadSettings();
+    }
 
     @Override
     public void onGameLoad()
     {
-        // Done in onGameLoad() because BlueprintMaster requires a sector and a factory
-        if (!HAS_LOADED)
-        {
-            HAS_LOADED = true;
-
-            try
-            {
-                OmnifactorySettings.reloadSettings();
-                BlueprintMaster.reloadBlueprints();
-            }
-            catch (JSONException | IOException ex)
-            {
-                throw new RuntimeException(ex);
-            }
-        }
-
-        // TODO
-        Global.getSector().addTransientScript(new Omnifactory(
-                Global.getSector().getEconomy().getMarketsCopy().get(0).getSubmarketsCopy().get(0)));
+        // TODO: Implement this properly
+        Omnifactory fakeFactory = new Omnifactory(
+                Global.getSector().getStarSystem("corvus")
+                .getEntityById("corvus_abandoned_station")
+                .getMarket().getSubmarket(Submarkets.SUBMARKET_STORAGE));
+        fakeFactory.addShipBlueprint("hound");
+        fakeFactory.addWingBlueprint("talon_wing");
+        fakeFactory.addWeaponBlueprint("lightmg");
+        Global.getSector().addTransientScript(fakeFactory);
     }
 
     @Override

@@ -6,12 +6,13 @@ import java.util.Map;
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignClockAPI;
+import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
+import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 
 public class Omnifactory implements EveryFrameScript
 {
-    // String = id, Integer = last heartbeat when the good was created
-    private final Map<String, Integer> knownShips, knownWings, knownWeapons;
+    private final Map<String, BlueprintStatus> knownShips, knownWings, knownWeapons;
     private final SubmarketAPI submarket;
     private long lastHeartbeat;
     private int numHeartbeats;
@@ -36,7 +37,7 @@ public class Omnifactory implements EveryFrameScript
         // Not a valid id
         if (!BlueprintMaster.getShipBlueprints().containsKey(hullId))
         {
-            return false;
+            throw new RuntimeException("No such hull: " + hullId);
         }
 
         // Blueprint already known
@@ -46,7 +47,7 @@ public class Omnifactory implements EveryFrameScript
         }
 
         // Register blueprint with the Omnifactory
-        knownShips.put(hullId, numHeartbeats);
+        knownShips.put(hullId, new BlueprintStatus(false));
         return true;
     }
 
@@ -60,7 +61,7 @@ public class Omnifactory implements EveryFrameScript
         // Not a valid id
         if (!BlueprintMaster.getWingBlueprints().containsKey(wingId))
         {
-            return false;
+            throw new RuntimeException("No such wing: " + wingId);
         }
 
         // Blueprint already known
@@ -70,7 +71,7 @@ public class Omnifactory implements EveryFrameScript
         }
 
         // Register blueprint with the Omnifactory
-        knownWings.put(wingId, numHeartbeats);
+        knownWings.put(wingId, new BlueprintStatus(false));
         return true;
     }
 
@@ -84,7 +85,7 @@ public class Omnifactory implements EveryFrameScript
         // Not a valid id
         if (!BlueprintMaster.getWeaponBlueprints().containsKey(weaponId))
         {
-            return false;
+            throw new RuntimeException("No such weapon: " + weaponId);
         }
 
         // Blueprint already known
@@ -94,7 +95,7 @@ public class Omnifactory implements EveryFrameScript
         }
 
         // Register blueprint with the Omnifactory
-        knownWeapons.put(weaponId, numHeartbeats);
+        knownWeapons.put(weaponId, new BlueprintStatus(false));
         return true;
     }
 
@@ -106,6 +107,84 @@ public class Omnifactory implements EveryFrameScript
     public SubmarketAPI getSubmarket()
     {
         return submarket;
+    }
+
+    private void checkBlueprint(Blueprint.BlueprintType type, String id,
+            BlueprintStatus status, CargoAPI cargo)
+    {
+        Blueprint blueprint = BlueprintMaster.getBlueprint(type, id);
+        if (!status.isAnalyzed)
+        {
+            if (numHeartbeats - status.lastHeartbeatUpdated >= blueprint.getDaysToAnalyze())
+            {
+                status.isAnalyzed = true;
+                status.lastHeartbeatUpdated = numHeartbeats;
+                Global.getSector().getCampaignUI().addMessage(
+                        "Analysis complete: " + id);
+            }
+        }
+        else
+        {
+            if (numHeartbeats - status.lastHeartbeatUpdated
+                    >= blueprint.getDaysToCreate())
+            {
+                if (blueprint.getTotalInCargo(cargo) < blueprint.getLimit())
+                {
+                    blueprint.create(cargo);
+                    status.totalCreated++;
+                    status.lastHeartbeatUpdated = numHeartbeats;
+                    Global.getSector().getCampaignUI().addMessage(
+                            "Created: " + id);
+                }
+                else
+                {
+                    status.lastHeartbeatUpdated = numHeartbeats;
+                    Global.getSector().getCampaignUI().addMessage(
+                            "Limit reached: " + id);
+                }
+            }
+        }
+    }
+
+    private void heartbeat()
+    {
+        CargoAPI cargo = submarket.getCargo();
+        if (cargo.getMothballedShips() == null)
+        {
+            cargo.initMothballedShips(submarket.getFaction().getId());
+        }
+
+        for (Map.Entry<String, BlueprintStatus> entry : knownShips.entrySet())
+        {
+            checkBlueprint(BlueprintType.SHIP, entry.getKey(), entry.getValue(), cargo);
+        }
+
+        for (Map.Entry<String, BlueprintStatus> entry : knownWings.entrySet())
+        {
+            checkBlueprint(BlueprintType.WING, entry.getKey(), entry.getValue(), cargo);
+        }
+
+        for (Map.Entry<String, BlueprintStatus> entry : knownWeapons.entrySet())
+        {
+            checkBlueprint(BlueprintType.WEAPON, entry.getKey(), entry.getValue(), cargo);
+        }
+    }
+
+    @Override
+    public void advance(float amount)
+    {
+        CampaignClockAPI clock = Global.getSector().getClock();
+
+        if (clock.getElapsedDaysSince(lastHeartbeat) >= 1f)
+        {
+            lastHeartbeat = clock.getTimestamp();
+            numHeartbeats++;
+            Global.getSector().getCampaignUI().addMessage(
+                    "Heartbeat " + numHeartbeats);
+            heartbeat();
+
+            // TODO: Check cargo for new blueprints
+        }
     }
 
     @Override
@@ -120,22 +199,31 @@ public class Omnifactory implements EveryFrameScript
         return false;
     }
 
-    @Override
-    public void advance(float amount)
+    public class BlueprintStatus
     {
-        CampaignClockAPI clock = Global.getSector().getClock();
+        private boolean isAnalyzed;
+        private int lastHeartbeatUpdated, totalCreated;
 
-        if (clock.getElapsedDaysSince(lastHeartbeat) >= 1f)
+        private BlueprintStatus(boolean isAnalyzed)
         {
-            lastHeartbeat = clock.getTimestamp();
-            numHeartbeats++;
-            System.out.println("Heartbeat #" + numHeartbeats);
-            /*heartbeat();
+            this.isAnalyzed = isAnalyzed;
+            lastHeartbeatUpdated = numHeartbeats;
+            totalCreated = 0;
+        }
 
-             if (checkCargo())
-             {
-             warnedRequirements = false;
-             }*/
+        public boolean isAnalyzed()
+        {
+            return isAnalyzed;
+        }
+
+        public void setAnalyzed(boolean isAnalyzed)
+        {
+            this.isAnalyzed = isAnalyzed;
+        }
+
+        public int getTotalCreated()
+        {
+            return totalCreated;
         }
     }
 }

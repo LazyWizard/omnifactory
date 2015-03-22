@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import com.fs.starfarer.api.Global;
+import org.apache.log4j.Level;
 import org.lazywizard.console.BaseCommand;
 import org.lazywizard.console.CommonStrings;
 import org.lazywizard.console.Console;
@@ -41,17 +43,21 @@ public class ListBlueprints implements BaseCommand
         datas.addAll(BlueprintMaster.getWingBlueprints().values());
         datas.addAll(BlueprintMaster.getWeaponBlueprints().values());
         Collections.sort(datas, new BlueprintSorter());
-        StringBuilder output = new StringBuilder(String.format(
-                "\n| %-20s | %-18s | %-6s | %-7s | %-5s | %-5s |\n",
-                "id", "display name", "type", "analyze", "build", "limit"));
+        String line = String.format("|%60s|\n", "").replace(' ', '-');
+        StringBuilder output = new StringBuilder("\n" + line);
+        output.append(String.format(
+                "| %-26s | %-6s | %4s | %5s | %5s |\n",
+                "id", "type", "scan", "build", "limit")).append(line);
         for (Blueprint data : datas)
         {
-            output.append(String.format("| %-20.20s | %-18.18s | %-6.6s | %-7d | %-5d | %-5d |\n",
-                    data.getId(), data.getDisplayName(), data.getType(),
-                    data.getDaysToAnalyze(), data.getDaysToCreate(), data.getLimit()));
+            output.append(String.format("| %-26.26s | %-6.6s | %4d | %5d | %5d |\n",
+                    data.getId(), data.getType(), data.getDaysToAnalyze(),
+                    data.getDaysToCreate(), data.getLimit()));
         }
+        output.append(line);
 
-        Console.showMessage(output.toString() + String.format("|%78s|", ""));
+        Console.showMessage("Posted a report to starsector.log.");
+        Global.getLogger(ListBlueprints.class).log(Level.INFO, output.toString());
         return CommandResult.SUCCESS;
     }
 

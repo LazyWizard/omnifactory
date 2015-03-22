@@ -1,13 +1,17 @@
 package org.lazywizard.omnifactory;
 
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignClockAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
+import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
+import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 
 public class Omnifactory implements EveryFrameScript
@@ -134,7 +138,8 @@ public class Omnifactory implements EveryFrameScript
                     status.totalCreated++;
                     status.lastHeartbeatUpdated = numHeartbeats;
                     Global.getSector().getCampaignUI().addMessage(
-                            "Created: " + id);
+                            "Created: " + id + " (" + status.totalCreated
+                            + " lifetime total)");
                 }
                 else
                 {
@@ -146,6 +151,14 @@ public class Omnifactory implements EveryFrameScript
         }
     }
 
+    private static void stripShip(FleetMemberAPI ship, CargoAPI cargo)
+    {
+        for (String slot : ship.getVariant().getNonBuiltInWeaponSlots())
+        {
+            cargo.addWeapons(ship.getVariant().getWeaponId(slot), 1);
+        }
+    }
+
     private void heartbeat()
     {
         CargoAPI cargo = submarket.getCargo();
@@ -154,19 +167,62 @@ public class Omnifactory implements EveryFrameScript
             cargo.initMothballedShips(submarket.getFaction().getId());
         }
 
+        // Check production for all already known blueprints
         for (Map.Entry<String, BlueprintStatus> entry : knownShips.entrySet())
         {
             checkBlueprint(BlueprintType.SHIP, entry.getKey(), entry.getValue(), cargo);
         }
-
         for (Map.Entry<String, BlueprintStatus> entry : knownWings.entrySet())
         {
             checkBlueprint(BlueprintType.WING, entry.getKey(), entry.getValue(), cargo);
         }
-
         for (Map.Entry<String, BlueprintStatus> entry : knownWeapons.entrySet())
         {
             checkBlueprint(BlueprintType.WEAPON, entry.getKey(), entry.getValue(), cargo);
+        }
+
+        // Check for new ship/wing blueprints
+        List<FleetMemberAPI> toRemove = new ArrayList<>();
+        for (FleetMemberAPI member : cargo.getMothballedShips().getMembersListCopy())
+        {
+            if (member.isFighterWing() && !knownWings.containsKey(member.getSpecId()))
+            {
+                toRemove.add(member);
+                addWingBlueprint(member.getSpecId());
+                Global.getSector().getCampaignUI().addMessage(
+                        "New wing: " + member.getSpecId());
+            }
+            else if (!member.isFighterWing() && !knownShips.containsKey(member.getHullId()))
+            {
+                // Strip weapons from ship
+                stripShip(member, cargo);
+                toRemove.add(member);
+                addShipBlueprint(member.getHullId());
+                Global.getSector().getCampaignUI().addMessage(
+                        "New hull: " + member.getHullId());
+            }
+        }
+        for (FleetMemberAPI member : toRemove)
+        {
+            cargo.getMothballedShips().removeFleetMember(member);
+        }
+
+        // Check for new weapon blueprints
+        for (CargoStackAPI stack : cargo.getStacksCopy())
+        {
+            if (stack.isNull() || !stack.isWeaponStack())
+            {
+                continue;
+            }
+
+            String id = stack.getWeaponSpecIfWeapon().getWeaponId();
+            if (!knownWeapons.containsKey(id))
+            {
+                addWeaponBlueprint(id);
+                cargo.removeWeapons((String) stack.getData(), 1);
+                Global.getSector().getCampaignUI().addMessage(
+                        "New weapon: " + id);
+            }
         }
     }
 

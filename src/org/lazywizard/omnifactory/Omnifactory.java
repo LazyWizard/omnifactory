@@ -1,269 +1,91 @@
 package org.lazywizard.omnifactory;
 
-import java.util.ArrayList;
-import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.CampaignClockAPI;
-import com.fs.starfarer.api.campaign.CargoAPI;
-import com.fs.starfarer.api.campaign.CargoStackAPI;
-import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
-import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 
-public class Omnifactory implements EveryFrameScript
+public class Omnifactory
 {
-    private final Map<String, BlueprintStatus> knownShips, knownWings, knownWeapons;
-    private final SubmarketAPI submarket;
-    private long lastHeartbeat;
-    private int numHeartbeats;
+    private static final String SHIP_PDATA_ID = "omnifactory_known_ships";
+    private static final String WING_PDATA_ID = "omnifactory_known_wings";
+    private static final String WEAPON_PDATA_ID = "omnifactory_known_weapons";
 
-    public Omnifactory(SubmarketAPI submarket)
+    private static Map<String, BlueprintStatus> getKnownBlueprints(BlueprintType type)
     {
-        this.submarket = submarket;
+        final String dataId;
+        switch (type)
+        {
+            case SHIP:
+                dataId = SHIP_PDATA_ID;
+                break;
+            case WING:
+                dataId = WING_PDATA_ID;
+                break;
+            case WEAPON:
+                dataId = WEAPON_PDATA_ID;
+                break;
+            default:
+                throw new RuntimeException("No such blueprint type: " + type.name());
+        }
 
-        knownShips = new LinkedHashMap<>();
-        knownWings = new LinkedHashMap<>();
-        knownWeapons = new LinkedHashMap<>();
+        final Map<String, Object> pData = Global.getSector().getPersistentData();
+        if (!pData.containsKey(dataId))
+        {
+            pData.put(dataId, new LinkedHashMap<String, BlueprintStatus>());
+        }
 
-        // Synchronize factory heartbeat to the start of the next day
-        final CampaignClockAPI clock = Global.getSector().getClock();
-        lastHeartbeat = new GregorianCalendar(clock.getCycle(),
-                clock.getMonth() - 1, clock.getDay()).getTimeInMillis();
-        numHeartbeats = 0;
+        return (Map<String, BlueprintStatus>) pData.get(dataId);
     }
 
-    public boolean addShipBlueprint(String hullId)
+    public static BlueprintStatus getBlueprintStatus(BlueprintType type, String id)
+    {
+        return getKnownBlueprints(type).get(id);
+    }
+
+    public static boolean addBlueprint(BlueprintType type, String id, boolean isAnalyzed)
     {
         // Not a valid id
-        if (!BlueprintMaster.getShipBlueprints().containsKey(hullId))
+        if (!BlueprintMaster.getAllBlueprints(type).containsKey(id))
         {
-            throw new RuntimeException("No such hull: " + hullId);
+            throw new RuntimeException("No such blueprint of type \""
+                    + type.name() + "\": " + id);
         }
 
         // Blueprint already known
-        if (knownShips.containsKey(hullId))
+        final Map<String, BlueprintStatus> knownBlueprints = getKnownBlueprints(type);
+        if (knownBlueprints.containsKey(id))
         {
             return false;
         }
 
         // Register blueprint with the Omnifactory
-        knownShips.put(hullId, new BlueprintStatus(false));
+        knownBlueprints.put(id, new BlueprintStatus(isAnalyzed));
         return true;
     }
 
-    public boolean removeShipBlueprint(String hullId)
+    public static boolean removeBlueprint(BlueprintType type, String id)
     {
-        return (knownShips.remove(hullId) != null);
+        return (getKnownBlueprints(type).remove(id) != null);
     }
 
-    public boolean addWingBlueprint(String wingId)
+    public static boolean isKnownBlueprint(BlueprintType type, String id)
     {
-        // Not a valid id
-        if (!BlueprintMaster.getWingBlueprints().containsKey(wingId))
-        {
-            throw new RuntimeException("No such wing: " + wingId);
-        }
-
-        // Blueprint already known
-        if (knownWings.containsKey(wingId))
-        {
-            return false;
-        }
-
-        // Register blueprint with the Omnifactory
-        knownWings.put(wingId, new BlueprintStatus(false));
-        return true;
+        return getKnownBlueprints(type).containsKey(id);
     }
 
-    public boolean removeWingBlueprint(String wingId)
+    private Omnifactory()
     {
-        return (knownWings.remove(wingId) != null);
     }
 
-    public boolean addWeaponBlueprint(String weaponId)
-    {
-        // Not a valid id
-        if (!BlueprintMaster.getWeaponBlueprints().containsKey(weaponId))
-        {
-            throw new RuntimeException("No such weapon: " + weaponId);
-        }
-
-        // Blueprint already known
-        if (knownWeapons.containsKey(weaponId))
-        {
-            return false;
-        }
-
-        // Register blueprint with the Omnifactory
-        knownWeapons.put(weaponId, new BlueprintStatus(false));
-        return true;
-    }
-
-    public boolean removeWeaponBlueprint(String weaponId)
-    {
-        return (knownWeapons.remove(weaponId) != null);
-    }
-
-    public SubmarketAPI getSubmarket()
-    {
-        return submarket;
-    }
-
-    private void checkBlueprint(Blueprint.BlueprintType type, String id,
-            BlueprintStatus status, CargoAPI cargo)
-    {
-        Blueprint blueprint = BlueprintMaster.getBlueprint(type, id);
-        if (!status.isAnalyzed)
-        {
-            if (numHeartbeats - status.lastHeartbeatUpdated >= blueprint.getDaysToAnalyze())
-            {
-                status.isAnalyzed = true;
-                status.lastHeartbeatUpdated = numHeartbeats;
-                Global.getSector().getCampaignUI().addMessage(
-                        "Analysis complete: " + id);
-            }
-        }
-        else
-        {
-            if (numHeartbeats - status.lastHeartbeatUpdated
-                    >= blueprint.getDaysToCreate())
-            {
-                if (blueprint.getTotalInCargo(cargo) < blueprint.getLimit())
-                {
-                    blueprint.create(cargo);
-                    status.totalCreated++;
-                    status.lastHeartbeatUpdated = numHeartbeats;
-                    Global.getSector().getCampaignUI().addMessage(
-                            "Created: " + id + " (" + status.totalCreated
-                            + " lifetime total)");
-                }
-                else
-                {
-                    status.lastHeartbeatUpdated = numHeartbeats;
-                    Global.getSector().getCampaignUI().addMessage(
-                            "Limit reached: " + id);
-                }
-            }
-        }
-    }
-
-    private static void stripShip(FleetMemberAPI ship, CargoAPI cargo)
-    {
-        for (String slot : ship.getVariant().getNonBuiltInWeaponSlots())
-        {
-            cargo.addWeapons(ship.getVariant().getWeaponId(slot), 1);
-        }
-    }
-
-    private void heartbeat()
-    {
-        CargoAPI cargo = submarket.getCargo();
-        if (cargo.getMothballedShips() == null)
-        {
-            cargo.initMothballedShips(submarket.getFaction().getId());
-        }
-
-        // Check production for all already known blueprints
-        for (Map.Entry<String, BlueprintStatus> entry : knownShips.entrySet())
-        {
-            checkBlueprint(BlueprintType.SHIP, entry.getKey(), entry.getValue(), cargo);
-        }
-        for (Map.Entry<String, BlueprintStatus> entry : knownWings.entrySet())
-        {
-            checkBlueprint(BlueprintType.WING, entry.getKey(), entry.getValue(), cargo);
-        }
-        for (Map.Entry<String, BlueprintStatus> entry : knownWeapons.entrySet())
-        {
-            checkBlueprint(BlueprintType.WEAPON, entry.getKey(), entry.getValue(), cargo);
-        }
-
-        // Check for new ship/wing blueprints
-        List<FleetMemberAPI> toRemove = new ArrayList<>();
-        for (FleetMemberAPI member : cargo.getMothballedShips().getMembersListCopy())
-        {
-            if (member.isFighterWing() && !knownWings.containsKey(member.getSpecId()))
-            {
-                toRemove.add(member);
-                addWingBlueprint(member.getSpecId());
-                Global.getSector().getCampaignUI().addMessage(
-                        "New wing: " + member.getSpecId());
-            }
-            else if (!member.isFighterWing() && !knownShips.containsKey(member.getHullId()))
-            {
-                // Strip weapons from ship
-                stripShip(member, cargo);
-                toRemove.add(member);
-                addShipBlueprint(member.getHullId());
-                Global.getSector().getCampaignUI().addMessage(
-                        "New hull: " + member.getHullId());
-            }
-        }
-        for (FleetMemberAPI member : toRemove)
-        {
-            cargo.getMothballedShips().removeFleetMember(member);
-        }
-
-        // Check for new weapon blueprints
-        for (CargoStackAPI stack : cargo.getStacksCopy())
-        {
-            if (stack.isNull() || !stack.isWeaponStack())
-            {
-                continue;
-            }
-
-            String id = stack.getWeaponSpecIfWeapon().getWeaponId();
-            if (!knownWeapons.containsKey(id))
-            {
-                addWeaponBlueprint(id);
-                cargo.removeWeapons((String) stack.getData(), 1);
-                Global.getSector().getCampaignUI().addMessage(
-                        "New weapon: " + id);
-            }
-        }
-    }
-
-    @Override
-    public void advance(float amount)
-    {
-        CampaignClockAPI clock = Global.getSector().getClock();
-
-        if (clock.getElapsedDaysSince(lastHeartbeat) >= 1f)
-        {
-            lastHeartbeat = clock.getTimestamp();
-            numHeartbeats++;
-            Global.getSector().getCampaignUI().addMessage(
-                    "Heartbeat " + numHeartbeats);
-            heartbeat();
-
-            // TODO: Check cargo for new blueprints
-        }
-    }
-
-    @Override
-    public boolean isDone()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean runWhilePaused()
-    {
-        return false;
-    }
-
-    public class BlueprintStatus
+    public static class BlueprintStatus
     {
         private boolean isAnalyzed;
-        private int lastHeartbeatUpdated, totalCreated;
+        private int totalCreated;
 
         private BlueprintStatus(boolean isAnalyzed)
         {
             this.isAnalyzed = isAnalyzed;
-            lastHeartbeatUpdated = numHeartbeats;
             totalCreated = 0;
         }
 

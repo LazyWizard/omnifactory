@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.loading.WeaponSpecAPI;
+import org.lazywizard.omnifactory.Omnifactory.BlueprintStatus;
 
 public class Blueprint
 {
@@ -80,6 +81,11 @@ public class Blueprint
     public BlueprintType getType()
     {
         return type;
+    }
+
+    public BlueprintStatus getStatus()
+    {
+        return Omnifactory.getBlueprintStatus(type, id);
     }
 
     public int getDaysToAnalyze()

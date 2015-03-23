@@ -12,6 +12,7 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import org.apache.log4j.Level;
 import org.json.JSONException;
+import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 
 public class BlueprintMaster
 {
@@ -85,7 +86,7 @@ public class BlueprintMaster
         }
     }
 
-    public static Blueprint getBlueprint(Blueprint.BlueprintType type, String id)
+    public static Blueprint getBlueprint(BlueprintType type, String id)
     {
         checkLoaded();
         switch (type)
@@ -97,25 +98,23 @@ public class BlueprintMaster
             case WEAPON:
                 return weaponBlueprints.get(id);
             default:
-                throw new RuntimeException("No such blueprint type: " + type);
+                throw new RuntimeException("No such blueprint type: " + type.name());
         }
     }
 
-    public static Map<String, Blueprint> getShipBlueprints()
+    public static Map<String, Blueprint> getAllBlueprints(BlueprintType type)
     {
         checkLoaded();
-        return Collections.unmodifiableMap(shipBlueprints);
-    }
-
-    public static Map<String, Blueprint> getWingBlueprints()
-    {
-        checkLoaded();
-        return Collections.unmodifiableMap(wingBlueprints);
-    }
-
-    public static Map<String, Blueprint> getWeaponBlueprints()
-    {
-        checkLoaded();
-        return Collections.unmodifiableMap(weaponBlueprints);
+        switch (type)
+        {
+            case SHIP:
+                return Collections.unmodifiableMap(shipBlueprints);
+            case WING:
+                return Collections.unmodifiableMap(wingBlueprints);
+            case WEAPON:
+                return Collections.unmodifiableMap(weaponBlueprints);
+            default:
+                throw new RuntimeException("No such blueprint type: " + type.name());
+        }
     }
 }

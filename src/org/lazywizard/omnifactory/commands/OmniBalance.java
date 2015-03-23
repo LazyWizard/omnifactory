@@ -13,7 +13,7 @@ import org.lazywizard.omnifactory.Blueprint;
 import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 import org.lazywizard.omnifactory.BlueprintMaster;
 
-public class ListBlueprints implements BaseCommand
+public class OmniBalance implements BaseCommand
 {
     public static void main(String[] args)
     {
@@ -39,9 +39,10 @@ public class ListBlueprints implements BaseCommand
             return CommandResult.WRONG_CONTEXT;
         }
 
-        List<Blueprint> datas = new ArrayList<>(BlueprintMaster.getShipBlueprints().values());
-        datas.addAll(BlueprintMaster.getWingBlueprints().values());
-        datas.addAll(BlueprintMaster.getWeaponBlueprints().values());
+        List<Blueprint> datas = new ArrayList<>(
+                BlueprintMaster.getAllBlueprints(BlueprintType.SHIP).values());
+        datas.addAll(BlueprintMaster.getAllBlueprints(BlueprintType.WING).values());
+        datas.addAll(BlueprintMaster.getAllBlueprints(BlueprintType.WEAPON).values());
         Collections.sort(datas, new BlueprintSorter());
         String line = String.format("|%60s|\n", "").replace(' ', '-');
         StringBuilder output = new StringBuilder("\n" + line);
@@ -56,8 +57,8 @@ public class ListBlueprints implements BaseCommand
         }
         output.append(line);
 
-        Console.showMessage("Posted a report to starsector.log.");
-        Global.getLogger(ListBlueprints.class).log(Level.INFO, output.toString());
+        Console.showMessage("Posted a blueprint balance report to starsector.log.");
+        Global.getLogger(OmniBalance.class).log(Level.INFO, output.toString());
         return CommandResult.SUCCESS;
     }
 

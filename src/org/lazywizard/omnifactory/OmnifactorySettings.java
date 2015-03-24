@@ -40,7 +40,7 @@ public class OmnifactorySettings
     public static void reloadSettings() throws JSONException, IOException
     {
         // Base Omnifactory settings
-        JSONObject settings = Global.getSettings().loadJSON(Constants.SETTINGS_FILE);
+        JSONObject settings = Global.getSettings().loadJSON(SETTINGS_FILE);
         randomLocation = settings.getBoolean("randomStartingLocation");
         showAddedCargo = settings.getBoolean("showAddedCargo");
         showAnalysisComplete = settings.getBoolean("showAnalysisComplete");

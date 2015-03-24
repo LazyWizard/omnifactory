@@ -1,0 +1,16 @@
+{
+    "omnifactory":{
+        "defaultName":"Omnifactory",
+        "pluginClass":"org.lazywizard.omnifactory.OmnifactoryImpl",
+        "icon":"graphics/icons/station0.png",
+        "iconWidth":20,
+        "iconHeight":20,
+        "showInCampaign":true,
+        "showIconOnMap":true,
+        "showNameOnMap":false,
+        "scaleNameWithZoom":false,
+        "scaleIconWithZoom":true,
+        "tags":["station","omnifactory"],
+        "layers":[STATIONS],
+    },
+}

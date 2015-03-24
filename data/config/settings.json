@@ -1,0 +1,7 @@
+{
+    "graphics":{
+        "stations":{
+            "omnifactory":"graphics/stations/station_small_full.png",
+        }
+    }
+}

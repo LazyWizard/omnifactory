@@ -9,9 +9,11 @@ import com.fs.starfarer.api.campaign.CampaignEngineLayers;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.CargoStackAPI;
 import com.fs.starfarer.api.campaign.CustomCampaignEntityPlugin;
+import com.fs.starfarer.api.campaign.FleetDataAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.combat.ViewportAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.graphics.SpriteAPI;
@@ -27,7 +29,8 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
 {
     private transient SpriteAPI sprite;
     private SectorEntityToken omnifactory;
-    private SubmarketAPI submarket;
+    private MemoryAPI memory;
+    private SubmarketAPI storage;
     private long lastHeartbeat;
     private int numHeartbeats;
 
@@ -60,7 +63,11 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
         }
 
         omnifactory.setMarket(market);
-        this.submarket = market.getSubmarket(Submarkets.SUBMARKET_STORAGE);
+        this.storage = market.getSubmarket(Submarkets.SUBMARKET_STORAGE);
+
+        memory = omnifactory.getMemory();
+        memory.set(Constants.MEMKEY_MAX_BAYS, 1);
+        memory.set(Constants.MEMKEY_MAX_FP, 3);
 
         // Synchronize factory heartbeat to the start of the next day
         final CampaignClockAPI clock = Global.getSector().getClock();
@@ -76,43 +83,6 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
         return this;
     }
 
-    /*private void checkBlueprint(Blueprint.BlueprintType type, String id,
-     BlueprintStatus status, CargoAPI cargo)
-     {
-     Blueprint blueprint = BlueprintMaster.getBlueprint(type, id);
-     if (!status.isAnalyzed)
-     {
-     if (numHeartbeats - status.lastHeartbeatUpdated >= blueprint.getDaysToAnalyze())
-     {
-     status.isAnalyzed = true;
-     status.lastHeartbeatUpdated = numHeartbeats;
-     Global.getSector().getCampaignUI().addMessage(
-     "Analysis complete: " + id);
-     }
-     }
-     else
-     {
-     if (numHeartbeats - status.lastHeartbeatUpdated
-     >= blueprint.getDaysToCreate())
-     {
-     if (blueprint.getTotalInCargo(cargo) < blueprint.getLimit())
-     {
-     blueprint.create(cargo);
-     status.totalCreated++;
-     status.lastHeartbeatUpdated = numHeartbeats;
-     Global.getSector().getCampaignUI().addMessage(
-     "Created: " + id + " (" + status.totalCreated
-     + " lifetime total)");
-     }
-     else
-     {
-     status.lastHeartbeatUpdated = numHeartbeats;
-     Global.getSector().getCampaignUI().addMessage(
-     "Limit reached: " + id);
-     }
-     }
-     }
-     }*/
     private static void stripShip(FleetMemberAPI ship, CargoAPI cargo)
     {
         for (String slot : ship.getVariant().getNonBuiltInWeaponSlots())
@@ -128,40 +98,29 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
         Global.getSector().getCampaignUI().addMessage(
                 "Heartbeat " + numHeartbeats);
 
-        CargoAPI cargo = submarket.getCargo();
-        if (cargo.getMothballedShips() == null)
+        CargoAPI cargo = storage.getCargo();
+        FleetDataAPI fleetData = cargo.getMothballedShips();
+        if (fleetData == null)
         {
-            cargo.initMothballedShips(submarket.getFaction().getId());
+            cargo.initMothballedShips(storage.getFaction().getId());
+            fleetData = cargo.getMothballedShips();
         }
 
-        // Check production for all already known blueprints
+        // TODO: Check production for all already known blueprints
         // TODO: Implement bay system
-        /*for (Map.Entry<String, BlueprintStatus> entry : knownShips.entrySet())
-         {
-         checkBlueprint(BlueprintType.SHIP, entry.getKey(), entry.getValue(), cargo);
-         }
-         for (Map.Entry<String, BlueprintStatus> entry : knownWings.entrySet())
-         {
-         checkBlueprint(BlueprintType.WING, entry.getKey(), entry.getValue(), cargo);
-         }
-         for (Map.Entry<String, BlueprintStatus> entry : knownWeapons.entrySet())
-         {
-         checkBlueprint(BlueprintType.WEAPON, entry.getKey(), entry.getValue(), cargo);
-         }*/
+        // TODO: Remove the following once the rules.csv behavior is in
         // Check for new ship/wing blueprints
         List<FleetMemberAPI> toRemove = new ArrayList<>();
-        for (FleetMemberAPI member : cargo.getMothballedShips().getMembersListCopy())
+        for (FleetMemberAPI member : fleetData.getMembersListCopy())
         {
-            if (member.isFighterWing() && !Omnifactory.isKnownBlueprint(
-                    BlueprintType.WING, member.getSpecId()))
+            if (member.isFighterWing() && !Omnifactory.isBlueprintKnown(member))
             {
                 toRemove.add(member);
                 Omnifactory.addBlueprint(BlueprintType.WING, member.getSpecId(), false);
                 Global.getSector().getCampaignUI().addMessage(
                         "New wing: " + member.getSpecId());
             }
-            else if (!member.isFighterWing() && !Omnifactory.isKnownBlueprint(
-                    BlueprintType.SHIP, member.getHullId()))
+            else if (!member.isFighterWing() && !Omnifactory.isBlueprintKnown(member))
             {
                 // Strip weapons from ship
                 stripShip(member, cargo);
@@ -173,7 +132,7 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
         }
         for (FleetMemberAPI member : toRemove)
         {
-            cargo.getMothballedShips().removeFleetMember(member);
+            fleetData.removeFleetMember(member);
         }
 
         // Check for new weapon blueprints
@@ -185,7 +144,7 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
             }
 
             String id = stack.getWeaponSpecIfWeapon().getWeaponId();
-            if (!Omnifactory.isKnownBlueprint(BlueprintType.WEAPON, id))
+            if (!Omnifactory.isBlueprintKnown(BlueprintType.WEAPON, id))
             {
                 Omnifactory.addBlueprint(BlueprintType.WEAPON, id, false);
                 cargo.removeWeapons((String) stack.getData(), 1);
@@ -212,7 +171,6 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
         sprite.setAngle(omnifactory.getFacing());
         sprite.setAlphaMult(viewport.getAlphaMult());
         sprite.setNormalBlend();
-        //sprite.setAdditiveBlend();
         sprite.renderAtCenter(loc.x, loc.y);
     }
 
@@ -221,32 +179,4 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
     {
         return omnifactory.getRadius() + 100f;
     }
-
-    /*private class BlueprintStatus
-     {
-     private boolean isAnalyzed;
-     private int lastHeartbeatUpdated, totalCreated;
-
-     private BlueprintStatus(boolean isAnalyzed)
-     {
-     this.isAnalyzed = isAnalyzed;
-     lastHeartbeatUpdated = numHeartbeats;
-     totalCreated = 0;
-     }
-
-     public boolean isAnalyzed()
-     {
-     return isAnalyzed;
-     }
-
-     public void setAnalyzed(boolean isAnalyzed)
-     {
-     this.isAnalyzed = isAnalyzed;
-     }
-
-     public int getTotalCreated()
-     {
-     return totalCreated;
-     }
-     }*/
 }

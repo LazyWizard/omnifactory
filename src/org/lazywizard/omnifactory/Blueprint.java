@@ -24,9 +24,9 @@ public class Blueprint
 
     Blueprint(FleetMemberAPI tmp)
     {
-        id = (tmp.isFighterWing() ? tmp.getSpecId() : tmp.getHullId());
+        id = BlueprintMaster.getBlueprintId(tmp);
+        type = BlueprintMaster.getBlueprintType(tmp);
         displayName = tmp.getHullSpec().getHullName();
-        type = (tmp.isFighterWing() ? BlueprintType.WING : BlueprintType.SHIP);
 
         final int fp = tmp.getFleetPointCost();
         final int size = tmp.getHullSpec().getHullSize().ordinal();
@@ -112,8 +112,8 @@ public class Blueprint
                 int total = 0;
                 for (FleetMemberAPI tmp : cargo.getMothballedShips().getMembersListCopy())
                 {
-                    String otherId = (type == BlueprintType.WING ? tmp.getSpecId() : tmp.getHullId());
-                    if (id.equals(otherId))
+                    if (type.equals(BlueprintMaster.getBlueprintType(tmp))
+                            && id.equals(BlueprintMaster.getBlueprintId(tmp)))
                     {
                         total++;
                     }

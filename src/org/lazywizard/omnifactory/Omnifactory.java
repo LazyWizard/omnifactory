@@ -3,8 +3,11 @@ package org.lazywizard.omnifactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CargoStackAPI;
+import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 
+// Handles per-save blueprint data
 public class Omnifactory
 {
     private static final String SHIP_PDATA_ID = "omnifactory_known_ships";
@@ -69,9 +72,26 @@ public class Omnifactory
         return (getKnownBlueprints(type).remove(id) != null);
     }
 
-    public static boolean isKnownBlueprint(BlueprintType type, String id)
+    public static boolean isBlueprintKnown(BlueprintType type, String id)
     {
         return getKnownBlueprints(type).containsKey(id);
+    }
+
+    public static boolean isBlueprintKnown(FleetMemberAPI member)
+    {
+        return isBlueprintKnown(BlueprintMaster.getBlueprintType(member),
+                BlueprintMaster.getBlueprintId(member));
+    }
+
+    public static boolean isBlueprintKnown(CargoStackAPI stack)
+    {
+        if (stack.isNull() || !stack.isWeaponStack())
+        {
+            return false;
+        }
+
+        return isBlueprintKnown(BlueprintType.WEAPON,
+                stack.getWeaponSpecIfWeapon().getWeaponId());
     }
 
     private Omnifactory()
@@ -102,6 +122,11 @@ public class Omnifactory
         public int getTotalCreated()
         {
             return totalCreated;
+        }
+
+        public void incTotalCreated()
+        {
+            totalCreated++;
         }
     }
 }

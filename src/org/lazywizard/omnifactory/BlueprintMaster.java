@@ -14,6 +14,7 @@ import org.apache.log4j.Level;
 import org.json.JSONException;
 import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 
+// Handles static blueprint data
 public class BlueprintMaster
 {
     private static final Map<String, Blueprint> shipBlueprints = new HashMap<>();
@@ -32,7 +33,7 @@ public class BlueprintMaster
         {
             final FleetMemberAPI tmp = Global.getFactory().createFleetMember(
                     FleetMemberType.SHIP, id);
-            shipBlueprints.put(tmp.getHullId(), new Blueprint(tmp));
+            shipBlueprints.put(getBlueprintId(tmp), new Blueprint(tmp));
         }
 
         // Load wing data
@@ -41,7 +42,7 @@ public class BlueprintMaster
         {
             final FleetMemberAPI tmp = Global.getFactory().createFleetMember(
                     FleetMemberType.FIGHTER_WING, id);
-            wingBlueprints.put(tmp.getSpecId(), new Blueprint(tmp));
+            wingBlueprints.put(getBlueprintId(tmp), new Blueprint(tmp));
         }
 
         // Load weapon data
@@ -100,6 +101,16 @@ public class BlueprintMaster
             default:
                 throw new RuntimeException("No such blueprint type: " + type.name());
         }
+    }
+
+    public static BlueprintType getBlueprintType(FleetMemberAPI member)
+    {
+        return (member.isFighterWing() ? BlueprintType.WING : BlueprintType.SHIP);
+    }
+
+    public static String getBlueprintId(FleetMemberAPI member)
+    {
+        return (member.isFighterWing() ? member.getSpecId() : member.getHullId());
     }
 
     public static Map<String, Blueprint> getAllBlueprints(BlueprintType type)

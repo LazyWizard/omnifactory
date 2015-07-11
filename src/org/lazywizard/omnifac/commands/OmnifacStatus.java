@@ -1,5 +1,6 @@
 package org.lazywizard.omnifac.commands;
 
+import java.util.Collections;
 import java.util.List;
 import org.lazywizard.console.BaseCommand;
 import org.lazywizard.console.CommonStrings;
@@ -35,13 +36,19 @@ public class OmnifacStatus implements BaseCommand
             // TODO: Format this to look good
             if (showDetailed)
             {
-                output.append(" - " + fac + "\n"
-                        + StringUtils.indent(StringUtils.wrapString("Known ships: "
-                                        + CollectionUtils.implode(fac.getKnownShips()), lineLength), "  ")
-                        + StringUtils.indent(StringUtils.wrapString("Known wings: "
-                                        + CollectionUtils.implode(fac.getKnownWings()), lineLength), "  ")
-                        + StringUtils.indent(StringUtils.wrapString("Known weapons: "
-                                        + CollectionUtils.implode(fac.getKnownWeapons()), lineLength), "  "));
+                output.append(" - " + fac);
+                List<String> tmp = fac.getKnownShips();
+                Collections.sort(tmp);
+                output.append(StringUtils.indent(StringUtils.wrapString("\nKnown ships: "
+                        + CollectionUtils.implode(tmp), lineLength), "  "));
+                tmp = fac.getKnownWings();
+                Collections.sort(tmp);
+                output.append(StringUtils.indent(StringUtils.wrapString("\nKnown wings: "
+                        + CollectionUtils.implode(tmp), lineLength), "  "));
+                tmp = fac.getKnownWeapons();
+                Collections.sort(tmp);
+                output.append(StringUtils.indent(StringUtils.wrapString("\nKnown weapons: "
+                        + CollectionUtils.implode(tmp), lineLength), "  "));
             }
             else
             {

@@ -1,0 +1,17 @@
+ = GENERAL =
+Communications array: allows remote control of the Omnifactory
+Advanced facilities: upgrades maximum FP of simultaneously produced ships (starts at 3, goes up to 90)
+
+ = PRODUCTION =
+Microfactory: allows production of fighters and weapons (works same as current Omnifactory)
+Ship production bay: allows production of frigates, construction must be ordered
+ - Expansion (destroyers): upgrades production bay to be able to produce destroyers
+  - Expansion (cruisers): upgrades production bay to be able to produce cruisers
+    - Expansion (capitals): upgrades production bay to be able to produce capital ships
+ - Add bay: adds another ship bay (starts at frigates only, must be upgraded, up to 4 bays allowed)
+
+ = MOBILITY =
+Station engines: allows the Omnifactory to move within the current system
+ - Dimensional stabilizer: allows the Omnifactory to move to other systems through hyperspace
+
+4 bays, 90 FP max

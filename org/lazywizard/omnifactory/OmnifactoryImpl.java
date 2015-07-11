@@ -54,6 +54,7 @@ public class OmnifactoryImpl implements CustomCampaignEntityPlugin
     public void init(SectorEntityToken omnifactory)
     {
         this.omnifactory = omnifactory;
+        Omnifactory.getAllOmnifactories().add(omnifactory);
 
         // TODO: Add multi-Omnifactory market support
         MarketAPI market = Global.getSector().getEconomy().getMarket("omnifactory");

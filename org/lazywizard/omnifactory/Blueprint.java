@@ -9,6 +9,7 @@ import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.loading.WeaponSpecAPI;
 import org.lazywizard.omnifactory.Omnifactory.BlueprintStatus;
 
+// TODO: Javadoc the hell out of this
 public class Blueprint
 {
     private final BlueprintType type;
@@ -83,6 +84,9 @@ public class Blueprint
         return type;
     }
 
+    /**
+     * Will return null if the Omnifactory doesn't know this blueprint yet!
+     */
     public BlueprintStatus getStatus()
     {
         return Omnifactory.getBlueprintStatus(type, id);
@@ -132,9 +136,14 @@ public class Blueprint
         switch (type)
         {
             case SHIP:
-                cargo.getMothballedShips().addFleetMember(
-                        Global.getFactory().createFleetMember(
-                                FleetMemberType.SHIP, id + "_Hull"));
+                FleetMemberAPI toAdd = Global.getFactory().createFleetMember(
+                        FleetMemberType.SHIP, id + "_Hull");
+                BlueprintStatus status = getStatus();
+                if (status != null)
+                {
+                    toAdd.setShipName("OMNI " + displayName + " " + status.getTotalCreated());
+                }
+                cargo.getMothballedShips().addFleetMember(toAdd);
                 break;
             case WING:
                 cargo.getMothballedShips().addFleetMember(

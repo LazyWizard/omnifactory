@@ -15,21 +15,6 @@ import org.lazywizard.omnifactory.BlueprintMaster;
 
 public class OmniBalance implements BaseCommand
 {
-    public static void main(String[] args)
-    {
-        String id = "lightdualmg", name = "Light Dual Machine Gun";
-        BlueprintType type = BlueprintType.WEAPON;
-        int daysToAnalyze = 5, daysToCreate = 10, limit = 20;
-
-        System.out.println(String.format(
-                "| %25s | %13s | %6s | %7s | %5s | %5s |",
-                "Display name", "id", "type", "analyze", "build", "limit"));
-        System.out.println(String.format(
-                "| %25s | %13s | %6s | %7d | %5d | %5d |",
-                name, id, type, daysToAnalyze, daysToCreate, limit));
-        System.out.println(String.format("|%78s|", ""));
-    }
-
     @Override
     public CommandResult runCommand(String args, CommandContext context)
     {

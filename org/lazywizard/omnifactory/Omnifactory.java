@@ -1,20 +1,35 @@
 package org.lazywizard.omnifactory;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CargoStackAPI;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import org.lazywizard.omnifactory.Blueprint.BlueprintType;
 
 // Handles per-save blueprint data
 public class Omnifactory
 {
+    private static final String FACTORY_PDATA_ID = "omnifactory_all_factories";
     private static final String SHIP_PDATA_ID = "omnifactory_known_ships";
     private static final String WING_PDATA_ID = "omnifactory_known_wings";
     private static final String WEAPON_PDATA_ID = "omnifactory_known_weapons";
 
-    private static Map<String, BlueprintStatus> getKnownBlueprints(BlueprintType type)
+    public static Set<SectorEntityToken> getAllOmnifactories()
+    {
+        final Map<String, Object> pData = Global.getSector().getPersistentData();
+        if (!pData.containsKey(FACTORY_PDATA_ID))
+        {
+            pData.put(FACTORY_PDATA_ID, new HashSet<SectorEntityToken>());
+        }
+
+        return (Set<SectorEntityToken>) pData.get(FACTORY_PDATA_ID);
+    }
+
+    public static Map<String, BlueprintStatus> getKnownBlueprints(BlueprintType type)
     {
         final String dataId;
         switch (type)

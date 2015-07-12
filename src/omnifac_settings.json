@@ -1,6 +1,6 @@
 {
     "randomStartingLocation":false, # If false, will orbit Somnus in Corvus
-    "numberOfFactories":1, # TODO, Only works if randomStartingLocation is true
+    "numberOfFactories":1, # Only works if randomStartingLocation is true
     "showAddedCargo":false, # Incredibly spammy, only useful for debug
     "showAnalysisComplete":true, # Notify player when production starts
     "showLimitReached":true, # Notify player when factory is full of a good

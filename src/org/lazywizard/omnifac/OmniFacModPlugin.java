@@ -101,23 +101,27 @@ public class OmniFacModPlugin extends BaseModPlugin
     {
         if (!wasEnabledBefore)
         {
-            // Set up the station and its market
-            SectorEntityToken factory = createOmnifactory();
-            MarketAPI market = Global.getFactory().createMarket(
-                    Constants.STATION_ID, Constants.STATION_NAME, 0);
-            SharedData.getData().getMarketsWithoutPatrolSpawn().add(Constants.STATION_ID);
-            SharedData.getData().getMarketsWithoutTradeFleetSpawn().add(Constants.STATION_ID);
-            market.setPrimaryEntity(factory);
-            market.setFactionId(Constants.STATION_FACTION);
-            market.addCondition(Conditions.ABANDONED_STATION);
-            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
-            ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
-                    .getPlugin()).setPlayerPaidToUnlock(true);
-            factory.setMarket(market);
-            Global.getSector().getEconomy().addMarket(market);
+            // Support for multiple factories
+            for (int x = 1; x <= OmniFacSettings.getNumberOfFactories(); x++)
+            {
+                // Set up the station and its market
+                SectorEntityToken factory = createOmnifactory();
+                String id = Constants.STATION_ID + "-" + x;
+                MarketAPI market = Global.getFactory().createMarket(id, Constants.STATION_NAME, 0);
+                SharedData.getData().getMarketsWithoutPatrolSpawn().add(id);
+                SharedData.getData().getMarketsWithoutTradeFleetSpawn().add(id);
+                market.setPrimaryEntity(factory);
+                market.setFactionId(Constants.STATION_FACTION);
+                market.addCondition(Conditions.ABANDONED_STATION);
+                market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
+                ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
+                        .getPlugin()).setPlayerPaidToUnlock(true);
+                factory.setMarket(market);
+                Global.getSector().getEconomy().addMarket(market);
 
-            // Add Omnifactory submarket to station's market
-            OmniFac.initOmnifactory(factory);
+                // Add Omnifactory submarket to station's market
+                OmniFac.initOmnifactory(factory);
+            }
         }
     }
 

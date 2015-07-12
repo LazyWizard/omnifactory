@@ -32,6 +32,7 @@ public class OmniFacSettings
     private static int maxHullsPerCruiser;
     private static int maxHullsPerCapital;
     private static float maxStacksPerWeapon;
+    private static int numberOfFactories;
     private static float omnifactoryTariff;
 
     public static void reloadSettings() throws JSONException, IOException
@@ -57,6 +58,7 @@ public class OmniFacSettings
         maxHullsPerCruiser = settings.getInt("maxHullsPerCruiser");
         maxHullsPerCapital = settings.getInt("maxHullsPerCapital");
         maxStacksPerWeapon = (float) settings.getDouble("maxStacksPerWeapon");
+        numberOfFactories = settings.getInt("numberOfFactories");
         omnifactoryTariff = (float) settings.getDouble("omnifactoryTariff");
 
         // Restricted goods
@@ -188,6 +190,11 @@ public class OmniFacSettings
     public static float getMaxStacksPerWeapon()
     {
         return maxStacksPerWeapon;
+    }
+
+    public static int getNumberOfFactories()
+    {
+        return (randomLocation ? numberOfFactories : 1);
     }
 
     public static float getOmnifactoryTariff()

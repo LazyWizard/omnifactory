@@ -1,12 +1,17 @@
+ Version 1.11b (July XX, 2015)
+===============================
+Implemented support for multiple Omnifactories:
+ - Change "numberOfFactories" in data/config/omnifactory/omnifac_settings.json;
+   "randomStartingLocation" must be true for this setting to work
+
  Version 1.11 (July 11, 2015)
 ==============================
 (this version is not save compatible with earlier versions)
 Rewrote Omnifactory as a submarket plugin
-Random starting location is disabled by default
+Random starting location is now disabled by default
 Fixed resources being illegal even if the setting to make them required is on
-Fixed weapon production limits being ludicrously high post-market update
+Fixed weapon production limits being ludicrously high post market update
 Added console command OmnifacStatus, shows location and data for all factories
-Added getKnownShips(), getKnownWings(), getKnownWeapons()
 Added BlueprintData interface:
  - int getDaysToAnalyze()
  - int getDaysToCreate()
@@ -17,6 +22,7 @@ Added BlueprintData interface:
  - int getTotal()
  - boolean isAnalyzed()
  - setAnalyzed(boolean isAnalyzed)
+Added getKnownShips(), getKnownWings(), getKnownWeapons(), return BlueprintDatas
 
  Version 1.10c (January 29, 2015)
 ==================================

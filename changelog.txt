@@ -1,8 +1,10 @@
- Version 1.11b (July XX, 2015)
-===============================
+ Version 1.11b (October 12, 2015)
+==================================
+Fixed spam if a restricted ship/item somehow ended up in the Omnifactory's cargo
 Implemented support for multiple Omnifactories:
  - Change "numberOfFactories" in data/config/omnifactory/omnifac_settings.json;
    "randomStartingLocation" must be true for this setting to work
+initOmnifactory() now sets up the storage submarket if it's not present
 
  Version 1.11 (July 11, 2015)
 ==============================

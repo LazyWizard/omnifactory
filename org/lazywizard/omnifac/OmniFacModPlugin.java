@@ -14,10 +14,8 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
-import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.impl.campaign.shared.SharedData;
-import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 import org.apache.log4j.Level;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.CollectionUtils.CollectionFilter;
@@ -113,9 +111,6 @@ public class OmniFacModPlugin extends BaseModPlugin
                 market.setPrimaryEntity(factory);
                 market.setFactionId(Constants.STATION_FACTION);
                 market.addCondition(Conditions.ABANDONED_STATION);
-                market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
-                ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
-                        .getPlugin()).setPlayerPaidToUnlock(true);
                 factory.setMarket(market);
                 Global.getSector().getEconomy().addMarket(market);
 

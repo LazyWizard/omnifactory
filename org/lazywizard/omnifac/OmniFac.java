@@ -18,8 +18,10 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
+import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 import org.lazywizard.lazylib.CollectionUtils;
+import org.lazywizard.lazylib.campaign.CargoUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
 public class OmniFac extends StoragePlugin
@@ -58,6 +60,14 @@ public class OmniFac extends StoragePlugin
 
         // Set up market data for the Omnifactory
         MarketAPI market = factory.getMarket();
+
+        if (!market.hasSubmarket(Submarkets.SUBMARKET_STORAGE))
+        {
+            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
+        }
+
+        ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
+                .getPlugin()).setPlayerPaidToUnlock(true);
         market.addSubmarket(Constants.SUBMARKET_ID);
         getFactory(factory).station = factory;
     }
@@ -164,6 +174,29 @@ public class OmniFac extends StoragePlugin
     public BlueprintData getWeaponBlueprint(String weaponId)
     {
         return wepData.get(weaponId);
+    }
+
+    public SubmarketAPI getStorageMarket()
+    {
+        if (!market.hasSubmarket(Submarkets.SUBMARKET_STORAGE))
+        {
+            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
+            ((StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE)
+                    .getPlugin()).setPlayerPaidToUnlock(true);
+            market.addSubmarket(Constants.SUBMARKET_ID);
+        }
+
+        return market.getSubmarket(Submarkets.SUBMARKET_STORAGE);
+    }
+
+    public CargoAPI getFactoryCargo()
+    {
+        return getCargo();
+    }
+
+    public CargoAPI getStorageCargo()
+    {
+        return getStorageMarket().getCargo();
     }
 
     public SectorEntityToken getStation()
@@ -405,17 +438,18 @@ public class OmniFac extends StoragePlugin
     public boolean checkCargo()
     {
         boolean newItem = false;
-        CargoAPI cargo = getCargo();
-        List<String> newShips = new ArrayList<>();
-        List<String> blockedShips = new ArrayList<>();
-        List<String> newWeps = new ArrayList<>();
-        List<String> blockedWeps = new ArrayList<>();
+        final CargoAPI cargo = getCargo(),
+                storage = getStorageCargo();
+        final List<String> newShips = new ArrayList<>(), blockedShips = new ArrayList<>(),
+                newWeps = new ArrayList<>(), blockedWeps = new ArrayList<>();
 
         for (FleetMemberAPI ship : cargo.getMothballedShips().getMembersListCopy())
         {
             if (isRestrictedShip(ship))
             {
                 blockedShips.add(ship.getHullSpec().getHullName());
+                cargo.getMothballedShips().removeFleetMember(ship);
+                storage.getMothballedShips().addFleetMember(ship);
             }
             else if (isUnknownShip(ship))
             {
@@ -455,6 +489,7 @@ public class OmniFac extends StoragePlugin
             if (isRestrictedWeapon(stack))
             {
                 blockedWeps.add(stack.getDisplayName());
+                CargoUtils.moveStack(stack, storage);
             }
             else if (isUnknownWeapon(stack))
             {
@@ -514,8 +549,10 @@ public class OmniFac extends StoragePlugin
             }
         }
 
+        boolean movedItems = false;
         if (!blockedShips.isEmpty())
         {
+            movedItems = true;
             Collections.sort(blockedShips);
             MessageUtils.showMessage("The " + station.getName()
                     + " is unable to replicate the following ships:",
@@ -524,10 +561,17 @@ public class OmniFac extends StoragePlugin
 
         if (!blockedWeps.isEmpty())
         {
+            movedItems = true;
             Collections.sort(blockedWeps);
             MessageUtils.showMessage("The " + station.getName()
                     + " is unable to replicate the following weapons:",
                     CollectionUtils.implode(blockedWeps) + ".", true);
+        }
+
+        if (movedItems)
+        {
+            Global.getSector().getCampaignUI().addMessage("All non-replicable"
+                    + " items have been moved to " + station.getName() + "'s storage.");
         }
 
         return newItem;
